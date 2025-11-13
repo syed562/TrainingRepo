@@ -1,0 +1,92 @@
+package com.nt.app.JunitProj03;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+
+import com.nt.service.AccountService;
+import com.nt.service.FundTransferService;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+	import org.junit.jupiter.api.BeforeEach;
+	import org.junit.jupiter.api.Test;
+
+	class FundTransferTest {
+
+	    private FundTransferService fundTransfer;
+	    private FakeAccountService accountService;
+
+	    // A simple fake AccountService
+	     class FakeAccountService implements AccountService {
+	        double balanceFrom = 500;
+	        double balanceTo = 200;
+	        boolean existsTo = true;
+	        boolean debitSuccess = true;
+	        boolean creditSuccess = true;
+
+	        @Override
+	        public boolean exists(String accountNumber) {
+	            return existsTo;
+	        }
+
+	        @Override
+	        public double getBalance(String accountNumber) {
+	            return accountNumber.equals("A123") ? balanceFrom : balanceTo;
+	        }
+
+	        @Override
+	        public boolean debit(String accountNumber, double amount) {
+	            return debitSuccess;
+	        }
+
+	        @Override
+	        public boolean credit(String accountNumber, double amount) {
+	            return creditSuccess;
+	        }
+	    }
+
+	    @BeforeEach
+	    void setup() {
+	        accountService = new FakeAccountService();
+	        fundTransfer = new FundTransferService(accountService);
+	    }
+
+	    @Test
+	    void testTransferSuccess() {
+	        String result = fundTransfer.transfer("A123", "B456", 100);
+	        assertEquals("SUCCESS: Transfer completed", result);
+	    }
+
+	    @Test
+	    void testInvalidAmount() {
+	        String result = fundTransfer.transfer("A123", "B456", 0);
+	        assertEquals("FAILURE: Invalid amount", result);
+	    }
+
+	    @Test
+	    void testSameAccount() {
+	        String result = fundTransfer.transfer("A123", "A123", 100);
+	        assertEquals("FAILURE: Source and destination cannot be same", result);
+	    }
+
+	    @Test
+	    void testInsufficientFunds() {
+	        accountService.balanceFrom = 50; // lower than transfer amount
+	        String result = fundTransfer.transfer("A123", "B456", 100);
+	        assertEquals("FAILURE: Insufficient funds", result);
+	    }
+
+	    @Test
+	    void testDestinationNotFound() {
+	        accountService.existsTo = false;
+	        String result = fundTransfer.transfer("A123", "B456", 100);
+	        assertEquals("FAILURE: Destination account not found", result);
+	    }
+
+	
+	}
+	
+	
+	
+	

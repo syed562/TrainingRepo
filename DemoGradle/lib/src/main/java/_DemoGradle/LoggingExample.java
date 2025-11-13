@@ -1,0 +1,19 @@
+package _DemoGradle;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+public class LoggingExample {
+	private static final Logger logg=LogManager.getLogger(LoggingExample.class);
+
+	public static void main(String[] args) {
+		logg.info("App started");
+		try {
+			int res=10/0;
+			
+		}catch(Exception e) {
+			logg.error("Division falied",e);
+		}
+		logg.info("App Finished");
+	}
+}

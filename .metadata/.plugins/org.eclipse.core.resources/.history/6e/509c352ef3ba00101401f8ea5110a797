@@ -1,0 +1,7 @@
+package com.app.attr;
+
+import java.util.Comparator;
+
+public class CustomComparator implements Comparator<Customer> {
+
+}

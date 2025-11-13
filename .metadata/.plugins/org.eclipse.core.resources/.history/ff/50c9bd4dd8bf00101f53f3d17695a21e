@@ -1,0 +1,50 @@
+package com.app.example;
+
+
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import com.app.example.MathDependency;
+import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.*;
+import com.app.example.CalculatorService;
+
+
+@ExtendWith(MockitoExtension.class)
+
+public class CalculatorServiceTest {
+
+    @Mock
+    MathDependency mathDependency;  // the fake dependency
+
+    @InjectMocks
+    CalculatorService calculatorService;  // service using the fake
+
+    @Test
+    void testAddition() {
+        // tell the fake what to do
+        Mockito.when(mathDependency.add(5, 3)).thenReturn(8);
+
+        // call the service
+        int result = calculatorService.performAddition(5, 3);
+
+        // check the result
+        assertEquals(8, result);
+
+        // verify the fake was called correctly
+        Mockito.verify(mathDependency).add(5, 3);
+    }
+
+    @Test
+    void testSubtraction() {
+        Mockito.when(mathDependency.subtract(10,4)).thenReturn(6);
+
+        int result = calculatorService.performSubtraction(10,4);
+
+        assertEquals(6, result);
+        Mockito.verify(mathDependency).subtract(10,4);
+}
+}

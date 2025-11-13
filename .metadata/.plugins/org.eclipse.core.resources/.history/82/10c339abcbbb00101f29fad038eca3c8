@@ -1,0 +1,13 @@
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class Test {
+
+	@Test
+	public void testAdd() {
+		int a=5;
+		int b=4;
+		ArthOps obj=new ArthOps();
+				
+		assertEquals(10, null);
+	}
+}

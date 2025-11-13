@@ -1,0 +1,20 @@
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import org.junit.jupiter.api.Test;
+
+public class Test1 {
+
+	@Test
+	public void testAdd() {
+		int i=2;
+		int j=4;
+		
+		assertEquals(i, j);
+	}
+	
+	public void testName() {
+		String name=null;
+		assertNull(name);
+	}
+}

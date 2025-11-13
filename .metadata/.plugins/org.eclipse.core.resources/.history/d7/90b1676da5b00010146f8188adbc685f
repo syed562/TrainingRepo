@@ -1,0 +1,7 @@
+package develop;
+
+public class FundTransfer {
+public static void meth1() {
+	System.out.println("FundTransfer.main()");
+}
+}

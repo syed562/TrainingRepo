@@ -1,0 +1,55 @@
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.app.att.AccountService;
+import com.app.att.FundTransferService;
+
+public class FundTransferServiceTest {
+
+    private FundTransferService fobj;
+
+    @BeforeEach
+    public void setUp() {
+        AccountService obj = new AccountService() {
+
+            @Override
+            public double getBalance(String accountNumber) {
+                return 1000; // all accounts have 1000 for testing
+            }
+
+            @Override
+            public boolean exists(String accountNumber) {
+                return true; // all accounts exist
+            }
+
+            @Override
+            public boolean debit(String accountNumber, double amount) {
+                return true; // always succeed
+            }
+
+            @Override
+            public boolean credit(String accountNumber, double amount) {
+                return true; // always succeed
+            }
+        };
+
+        fobj = new FundTransferService(obj);
+    }
+
+    @Test
+    public void testWithNegativeAmount() {
+        assertEquals("FAILURE: Invalid amount", fobj.transfer("Sabi", "Has", -2));
+    }
+
+    @Test
+    public void testSameAccount() {
+        assertEquals("FAILURE: Source and destination cannot be same", fobj.transfer("Sabi", "Sabi", 100));
+    }
+
+    @Test
+    public void testTransactionSuccess() {
+        assertEquals("SUCCESS: Transfer completed", fobj.transfer("Sabi", "Has", 100));
+    }
+}
