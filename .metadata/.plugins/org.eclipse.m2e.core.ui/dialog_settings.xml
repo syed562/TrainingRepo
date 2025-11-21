@@ -31,15 +31,13 @@
 	</section>
 	<section name="Maven2ProjectWizardArchifactPage">
 		<list key="package">
-			<item value="com.app.MavenDemo6_MockitoTest"/>
-			<item value="com.app.FundTransferTest"/>
+			<item value="com.cb.Demo18_Backup"/>
 		</list>
 		<list key="groupId">
-			<item value="com.app"/>
+			<item value="com.cb"/>
 		</list>
 		<list key="artifactId">
-			<item value="MavenDemo6-MockitoTest"/>
-			<item value="FundTransferTest"/>
+			<item value="Demo18_Backup"/>
 		</list>
 		<list key="projectNameTemplate">
 			<item value="[artifactId]"/>
@@ -75,5 +73,22 @@
 	<section name="org.eclipse.m2e.core.pom.overview">
 	</section>
 	<section name="org.eclipse.m2e.core.pom.dependencies">
+	</section>
+	<section name="wizardPage">
+		<list key="groupId">
+			<item value="Assignment1"/>
+			<item value="Demo19_FunctionalProgramming"/>
+			<item value="Demo18_Book"/>
+		</list>
+		<list key="name">
+		</list>
+		<list key="artifactId">
+			<item value="Assignment1"/>
+			<item value="Demo19_FunctionalProgramming"/>
+			<item value="Demo18_Book"/>
+		</list>
+		<list key="version">
+			<item value="0.0.1-SNAPSHOT"/>
+		</list>
 	</section>
 </section>

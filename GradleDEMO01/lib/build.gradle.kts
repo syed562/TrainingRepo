@@ -5,7 +5,7 @@
  * For more details on building Java & JVM projects, please refer to https://docs.gradle.org/8.14.3/userguide/building_java_projects.html in the Gradle documentation.
  */
 
-plugins {
+plugins{
     // Apply the java-library plugin for API and implementation separation.
     `java-library`
 }
