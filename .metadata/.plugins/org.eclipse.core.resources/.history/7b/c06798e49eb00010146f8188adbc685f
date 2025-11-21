@@ -1,7 +1,0 @@
-package develop;
-
-public class FundTransfer {
-public static void main(String[] args) {
-	System.out.println("FundTransfer.main()");
-}
-}

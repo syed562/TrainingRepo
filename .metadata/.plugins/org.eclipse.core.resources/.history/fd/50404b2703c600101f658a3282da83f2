@@ -1,0 +1,39 @@
+package com.app.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.app.models.Tutorial;
+import com.app.service.TutorialService;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+@CrossOrigin(origins="http://localhost:8081")
+@RestController
+@RequestMapping("/api")
+public class TutorialController {
+
+	@Autowired
+	TutorialService tser;
+	
+	@GetMapping("/tutorials")
+	//@ResponseStatus(HttpStatus.OK)
+	public RsponseEntity<Flux<Tutorial>>getAllTutorials(@PathVariable(required = false)String title){
+		if(title==null)return tser.findAll();
+		return new ResponseEntity<Flux<Tutorial>>(tser.findByTitle(title), HttpStatus.OK);
+
+	
+	}
+	
+	
+	public Mono<Tutorial>getTutById(){
+		
+	}
+}

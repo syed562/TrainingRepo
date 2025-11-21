@@ -1,0 +1,13 @@
+package com.app.models;
+
+
+
+public class Tutorial {
+
+	private Integer Id;
+	private String title;
+	private String description;
+	private boolean published;
+	
+	
+}

@@ -1,0 +1,15 @@
+package com.app.repo;
+
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.stereotype.Repository;
+
+import com.app.models.Tutorial;
+
+import reactor.core.publisher.Flux;
+
+@Repository
+public interface TutorialRepo extends R2dbcRepository<Tutorial, Integer>{
+
+	Flux<Tutorial>findByTitle(String title);
+	Flux<Tutorial>findBypublished(boolean isPublished);
+}

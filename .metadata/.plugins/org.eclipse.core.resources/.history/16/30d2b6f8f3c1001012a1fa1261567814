@@ -1,0 +1,72 @@
+package com.example.demo;
+
+import java.util.List;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+
+@Entity
+@Table(name="Orders")
+public class Order{
+
+	
+@GeneratedValue(strategy =GenerationType.AUTO)
+@Id
+	private Integer id;
+	@NotBlank
+	private String item;
+	@Min(value=1)
+	private float price;
+	private int quantity;
+//	public Address getAddress() {
+//		return address;
+//	}
+//	public void setAddress(Address address) {
+//		this.address = address;
+//	}
+//	Address address;
+	
+	@OneToMany
+	private List<Address>addresses=new ArrayList<>();
+	 // helper method to keep both sides in sync
+    public void addAddress(Address address) {
+        addresses.add(address);
+        address.setOrder(this);
+    }
+
+    public void setAddresses(List<Address> addresses) {
+       
+        if (addresses != null) {
+            addresses.forEach(this::addAddress);
+        }
+    }
+
+    public List<Address> getAddresses() {
+        return addresses;
+    }
+	public String getItem() {
+		return item;
+	}
+	public void setItem(String item) {
+		this.item = item;
+	}
+	public float getPrice() {
+		return price;
+	}
+	public void setPrice(float price) {
+		this.price = price;
+	}
+	public int getQuantity() {
+		return quantity;
+	}
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
+	
+}

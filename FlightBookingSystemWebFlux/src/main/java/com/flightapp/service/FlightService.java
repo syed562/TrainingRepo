@@ -1,0 +1,222 @@
+package com.flightapp.service;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.flightapp.dto.BookingRequest;
+import com.flightapp.dto.BookingResponse;
+import com.flightapp.dto.FlighRequestSearch;
+import com.flightapp.dto.FlightResponse;
+import com.flightapp.dto.InventoryRequest;
+import com.flightapp.dto.PassengerDetails;
+import com.flightapp.models.Booking;
+import com.flightapp.models.Flight;
+import com.flightapp.models.Passenger;
+import com.flightapp.models.PnrGenerator;
+import com.flightapp.repo.AirlineRepo;
+import com.flightapp.repo.BookingRepo;
+import com.flightapp.repo.FlightRepo;
+import com.flightapp.repo.PassengerRepo;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+@Service
+public class FlightService {
+
+	@Autowired
+	private FlightRepo flightRepo;
+
+	@Autowired
+	private BookingRepo bookingRepo;
+
+	@Autowired
+	private AirlineRepo airlineRepo;
+
+	@Autowired
+	private PassengerRepo passengerRepo;
+
+	public Mono<FlightResponse> addFlightInventory(InventoryRequest req) {
+		return airlineRepo.findById(req.getAirlineId())
+				.switchIfEmpty(Mono.error(new RuntimeException("Airline not found"))).flatMap(al -> {
+					Flight f = new Flight();
+					f.setFlightNumber(req.getFlightNumber());
+					f.setAirlineId(al.getId()); // airline foreign key
+					f.setFromPlace(req.getFromPlace());
+					f.setToPlace(req.getToPlace());
+					f.setDepartureTime(req.getDepartureTime());
+					f.setArrivalTime(req.getArrivalTime());
+					f.setPrice(req.getPrice());
+					f.setTotalSeats(req.getTotalSeats());
+					f.setAvailableSeats(req.getTotalSeats());
+					f.setTripType(req.getTripType());
+					return flightRepo.save(f);
+				}).flatMap(this::mapToFlightResponse);
+	}
+
+	public Flux<FlightResponse> searchFlights(FlighRequestSearch req) {
+		return flightRepo.searchFlights(req.getFromPlace(), req.getToPlace(), req.getDepartDate())
+				.flatMap(this::mapToFlightResponse);
+
+	}
+
+	public Mono<BookingResponse> bookTicket(Long flightId, BookingRequest req) {
+
+		return flightRepo.findById(flightId).switchIfEmpty(Mono.error(new RuntimeException("Flight not found")))
+				.flatMap(flight -> {
+
+					if (flight.getAvailableSeats() < req.getNumberOfSeats())
+						return Mono.error(new RuntimeException("Not enough seats available"));
+
+					if (req.getPassengers().size() != req.getNumberOfSeats())
+						return Mono.error(new RuntimeException("Passenger count mismatch"));
+
+					Booking booking = new Booking();
+					booking.setPnr(PnrGenerator.generatePnr());
+					booking.setFlightId(flight.getFlightId());
+					booking.setEmailId(req.getEmailId());
+					booking.setUserName(req.getUserName());
+					booking.setNumberOfSeats(req.getNumberOfSeats());
+					booking.setBookingDate(LocalDateTime.now());
+					booking.setStatus("CONFIRMED");
+					booking.setTotalAmount(flight.getPrice() * req.getNumberOfSeats());
+
+					return bookingRepo.save(booking).flatMap(savedBooking -> {
+
+						List<Passenger> pax = req.getPassengers().stream().map(p -> {
+							Passenger ps = new Passenger();
+							ps.setBookingId(savedBooking.getBookingId());
+							ps.setPassengerName(p.getName());
+							ps.setGender(p.getGender());
+							ps.setAge(p.getAge());
+							ps.setMealPreference(p.getMealPreference());
+							ps.setSeatNumber(p.getSeatNo());
+							return ps;
+						}).toList();
+
+						return passengerRepo.saveAll(pax).collectList().flatMap(savedPassengers -> {
+							flight.setAvailableSeats(flight.getAvailableSeats() - req.getNumberOfSeats());
+							return flightRepo.save(flight).then(airlineRepo.findById(flight.getAirlineId()).flatMap(
+									al -> Mono.just(mapToBookingResponse(savedBooking, flight, savedPassengers, al))));
+						});
+					});
+				});
+	}
+
+	
+
+
+
+
+
+	public Mono<String> cancelBooking(String pnr) {
+		return bookingRepo.findByPnr(pnr).switchIfEmpty(Mono.error(new RuntimeException("Booking not found")))
+				.flatMap(booking -> flightRepo.findById(booking.getFlightId()).flatMap(flight -> {
+					long hours = ChronoUnit.HOURS.between(LocalDateTime.now(), flight.getDepartureTime());
+					if (hours < 24)
+						return Mono.error(new RuntimeException("Cannot cancel within 24 hours of departure"));
+
+					booking.setStatus("CANCELLED");
+
+					return bookingRepo.save(booking).then(Mono.defer(() -> {
+						flight.setAvailableSeats(flight.getAvailableSeats() + booking.getNumberOfSeats());
+						return flightRepo.save(flight);
+					})).thenReturn("Booking cancelled successfully. PNR: " + pnr);
+				}));
+	}
+
+	private Mono<FlightResponse> mapToFlightResponse(Flight f) {
+		return airlineRepo.findById(f.getAirlineId()).map(al -> {
+			FlightResponse r = new FlightResponse();
+			r.setFlightId(f.getFlightId());
+			r.setFlightNumber(f.getFlightNumber());
+			r.setFromPlace(f.getFromPlace());
+			r.setToPlace(f.getToPlace());
+			r.setDepartTime(f.getDepartureTime());
+			r.setArrivalTime(f.getArrivalTime());
+			r.setPrice(f.getPrice());
+			r.setAvailableSeats(f.getAvailableSeats());
+			r.setTripType(f.getTripType());
+			r.setAirlineName(al.getAirlineName());
+			r.setAirlineLogo(al.getAirlineLogo());
+			return r;
+		});
+	}
+
+	private BookingResponse mapToBookingResponse(Booking b, Flight f, List<Passenger> pax,
+			com.flightapp.models.Airline al) {
+
+		BookingResponse r = new BookingResponse();
+		r.setPnr(b.getPnr());
+		r.setFlightNumber(f.getFlightNumber());
+		r.setAirlineName(al.getAirlineName());
+		r.setEmailId(b.getEmailId());
+		r.setUserName(b.getUserName());
+		r.setNumberOfSeats(b.getNumberOfSeats());
+		r.setBookingDate(b.getBookingDate());
+		r.setDepartureTime(f.getDepartureTime());
+		r.setFromPlace(f.getFromPlace());
+		r.setToPlace(f.getToPlace());
+		r.setStatus(b.getStatus());
+		r.setTotalAmount(b.getTotalAmount());
+
+		List<PassengerDetails> dtos = pax.stream().map(p -> {
+			PassengerDetails pd = new PassengerDetails();
+			pd.setName(p.getPassengerName());
+			pd.setGender(p.getGender());
+			pd.setAge(p.getAge());
+			pd.setMealType(p.getMealPreference());
+			pd.setSeatNo(p.getSeatNumber());
+			return pd;
+		}).toList();
+
+		r.setPassengers(dtos);
+		return r;
+	}
+	
+	
+	
+	public Mono<ResponseEntity<BookingResponse>> getBookingByPnr(String pnr) {
+
+	    return bookingRepo.findByPnr(pnr)
+	        .switchIfEmpty(Mono.error(new ResourceNotFoundException("Booking with PNR " + pnr + " not found")))
+	        .flatMap(b ->
+	            flightRepo.findById(b.getFlightId())
+	                .flatMap(f ->
+	                    passengerRepo.findByBookingId(b.getBookingId()).collectList()
+	                        .flatMap(pax ->
+	                            airlineRepo.findById(f.getAirlineId())
+	                                .map(al -> mapToBookingResponse(b, f, pax, al))
+	                        )
+	                )
+	        )
+	        .map(ResponseEntity::ok);
+	}
+	
+	
+	
+	public Mono<ResponseEntity<List<BookingResponse>>> getBookingHistory(String emailId) {
+
+	    return bookingRepo.findByEmailId(emailId)
+	        .switchIfEmpty(Mono.error(new ResourceNotFoundException("No bookings found for " + emailId)))
+	        .flatMap(b ->
+	            flightRepo.findById(b.getFlightId())
+	                .flatMap(f ->
+	                    passengerRepo.findByBookingId(b.getBookingId()).collectList()
+	                        .flatMap(pax ->
+	                            airlineRepo.findById(f.getAirlineId())
+	                                .map(al -> mapToBookingResponse(b, f, pax, al))
+	                        )
+	                )
+	        )
+	        .collectList()
+	        .map(ResponseEntity::ok);
+	}
+
+
+}

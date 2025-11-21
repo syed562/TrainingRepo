@@ -1,2 +1,0 @@
-Hello Java
-This is a Scanner example

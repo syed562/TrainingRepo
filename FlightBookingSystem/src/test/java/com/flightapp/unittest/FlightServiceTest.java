@@ -1,0 +1,284 @@
+package com.flightapp.unittest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.flightapp.dto.BookingRequest;
+import com.flightapp.dto.BookingResponse;
+import com.flightapp.dto.FlighRequestSearch;
+import com.flightapp.dto.FlightResponse;
+import com.flightapp.dto.InventoryRequest;
+import com.flightapp.dto.PassengerDetails;
+import com.flightapp.models.Airline;
+import com.flightapp.models.Booking;
+import com.flightapp.models.Flight;
+import com.flightapp.repo.AirlineRepos;
+import com.flightapp.repo.BookingRepo;
+import com.flightapp.repo.FlightRepo;
+import com.flightapp.repo.PassengerRepo;
+import com.flightapp.service.FlightService;
+
+@ExtendWith(MockitoExtension.class)
+class FlightServiceTest {
+    
+    @Mock
+    private FlightRepo flightRepository;
+    
+    @Mock
+    private BookingRepo bookingRepository;
+    
+    @Mock
+    private AirlineRepos airlineRepository;
+    
+    @Mock
+    private PassengerRepo passengerRepository;
+    
+    @InjectMocks
+    private FlightService flightService;
+    
+    private Airline airline;
+    private Flight flight;
+    private Booking booking;
+    
+    @BeforeEach
+    void setUp() {
+       
+        airline = new Airline();
+        airline.setId(1L);
+        airline.setAirlineName("Air India");
+        airline.setAirlineLogo("airindialogo.png");
+        
+       
+        flight = new Flight();
+        flight.setFlightId(1L);
+        flight.setFlightNumber("AI101");
+        flight.setAirline(airline);
+        flight.setFromPlace("Delhi");
+        flight.setToPlace("Mumbai");
+        flight.setDepartureTime(LocalDateTime.now().plusDays(2));
+        flight.setArrivalTime(LocalDateTime.now().plusDays(2).plusHours(2));
+        flight.setPrice(5000.0);
+        flight.setTotalSeats(100);
+        flight.setAvailableSeats(100);
+        flight.setTripType("one-way");
+        
+       
+        booking = new Booking();
+        booking.setBookingId(1L);
+        booking.setPnr("PNR202411171A2B");
+        booking.setFlight(flight);
+        booking.setEmailId("test@example.com");
+        booking.setUserName("Test User");
+        booking.setNumberOfSeats(2);
+        booking.setBookingDate(LocalDateTime.now());
+        booking.setStatus("CONFIRMED");
+        booking.setTotalAmount(10000.0);
+        booking.setPassengers(new ArrayList<>());
+    }
+    
+    @Test
+    void testAddFlightInventory_Success() {
+        
+        InventoryRequest request = new InventoryRequest();
+        request.setFlightNumber("AI101");
+        request.setAirlineId(1L);
+        request.setFromPlace("Delhi");
+        request.setToPlace("Mumbai");
+        request.setDepartureTime(LocalDateTime.now().plusDays(2));
+        request.setArrivalTime(LocalDateTime.now().plusDays(2).plusHours(2));
+        request.setPrice(5000.0);
+        request.setTotalSeats(100);
+        request.setTripType("one-way");
+        
+        when(airlineRepository.findById(1L)).thenReturn(Optional.of(airline));
+        when(flightRepository.save(any(Flight.class))).thenReturn(flight);
+        
+    
+        FlightResponse response = flightService.addFlightInventory(request);
+        
+       
+        assertNotNull(response);
+        assertEquals("AI101", response.getFlightNumber());
+        assertEquals("Air India", response.getAirlineName());
+        verify(airlineRepository, times(1)).findById(1L);
+        verify(flightRepository, times(1)).save(any(Flight.class));
+    }
+    
+    @Test
+    void testAddFlightInventory_AirlineNotFound() {
+        
+        InventoryRequest request = new InventoryRequest();
+        request.setAirlineId(999L);
+        
+        when(airlineRepository.findById(999L)).thenReturn(Optional.empty());
+      
+        assertThrows(RuntimeException.class, () -> {
+            flightService.addFlightInventory(request);
+        });
+    }
+    
+    @Test
+    void testSearchFlights_Success() {
+        
+        FlighRequestSearch searchRequest = new FlighRequestSearch();
+        searchRequest.setFromPlace("Delhi");
+        searchRequest.setToPlace("Mumbai");
+        searchRequest.setDepartDate(LocalDate.now().plusDays(2));
+        
+        List<Flight> flights = Arrays.asList(flight);
+        when(flightRepository.searchFlights(anyString(), anyString(), any(LocalDateTime.class)))
+            .thenReturn(flights);
+        
+      
+        List<FlightResponse> responses = flightService.searchFlights(searchRequest);
+        
+       
+        assertNotNull(responses);
+        assertEquals(1, responses.size());
+        assertEquals("AI101", responses.get(0).getFlightNumber());
+    }
+    
+    @Test
+    void testBookTicket_Success() {
+       
+        BookingRequest bookingRequest = new BookingRequest();
+        bookingRequest.setUserName("Test User");
+        bookingRequest.setEmailId("test@example.com");
+        bookingRequest.setNumberOfSeats(2);
+        
+        PassengerDetails passenger1 = new PassengerDetails();
+        passenger1.setPassenger_name("John Doe");
+        passenger1.setGender("Male");
+        passenger1.setAge(30);
+        passenger1.setMealType("VEG");
+        passenger1.setSeatNo("1A");
+        
+        PassengerDetails passenger2 = new PassengerDetails();
+        passenger2.setPassenger_name("Jane Doe");
+        passenger2.setGender("Female");
+        passenger2.setAge(28);
+        passenger2.setMealType("NON-VEG");
+        passenger2.setSeatNo("1B");
+        
+        bookingRequest.setPassengers(Arrays.asList(passenger1, passenger2));
+        
+        when(flightRepository.findById(1L)).thenReturn(Optional.of(flight));
+        when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
+        when(passengerRepository.saveAll(anyList())).thenReturn(new ArrayList<>());
+        
+        
+        BookingResponse response = flightService.bookTicket(1L, bookingRequest);
+        
+     
+        assertNotNull(response);
+        assertEquals("Test User", response.getUserName());
+        assertEquals(2, response.getNumberOfSeats());
+        verify(flightRepository, times(1)).save(any(Flight.class));
+    }
+    
+    @Test
+    void testBookTicket_InsufficientSeats() {
+      
+        flight.setAvailableSeats(1);
+        BookingRequest bookingRequest = new BookingRequest();
+        bookingRequest.setNumberOfSeats(2);
+        
+        when(flightRepository.findById(1L)).thenReturn(Optional.of(flight));
+        
+        assertThrows(RuntimeException.class, () -> {
+            flightService.bookTicket(1L, bookingRequest);
+        });
+    }
+    
+    @Test
+    void testGetTicketByPnr_Success() {
+        
+        when(bookingRepository.findByPnr("PNR202411171A2B"))
+            .thenReturn(Optional.of(booking));
+        
+        
+        BookingResponse response = flightService.getTicketByPnr("PNR202411171A2B");
+        
+        
+        assertNotNull(response);
+        assertEquals("PNR202411171A2B", response.getPnr());
+    }
+    
+    @Test
+    void testGetTicketByPnr_NotFound() {
+        
+        when(bookingRepository.findByPnr("INVALID")).thenReturn(Optional.empty());
+        
+     
+        assertThrows(RuntimeException.class, () -> {
+            flightService.getTicketByPnr("INVALID");
+        });
+    }
+    
+    @Test
+    void testGetBookingHistory_Success() {
+       
+        List<Booking> bookings = Arrays.asList(booking);
+        when(bookingRepository.findByEmailIdOrderByBookingDateDesc("test@example.com"))
+            .thenReturn(bookings);
+        
+       
+        List<BookingResponse> responses = flightService.getBookingHistory("test@example.com");
+        
+      
+        assertNotNull(responses);
+        assertEquals(1, responses.size());
+    }
+    
+    @Test
+    void testCancelBooking_Success() {
+       
+        flight.setDepartureTime(LocalDateTime.now().plusDays(2));
+        booking.setFlight(flight);
+        
+        when(bookingRepository.findByPnr("PNR202411171A2B"))
+            .thenReturn(Optional.of(booking));
+        
+        String result = flightService.cancelBooking("PNR202411171A2B");
+        
+        
+        assertNotNull(result);
+        assertTrue(result.contains("cancelled successfully"));
+        verify(bookingRepository, times(1)).save(any(Booking.class));
+    }
+    
+    @Test
+    void testCancelBooking_WithinCancellationWindow() {
+        
+        flight.setDepartureTime(LocalDateTime.now().plusHours(12));
+        booking.setFlight(flight);
+        
+        when(bookingRepository.findByPnr("PNR202411171A2B"))
+            .thenReturn(Optional.of(booking));
+        
+        assertThrows(RuntimeException.class, () -> {
+            flightService.cancelBooking("PNR202411171A2B");
+        });
+    }
+}

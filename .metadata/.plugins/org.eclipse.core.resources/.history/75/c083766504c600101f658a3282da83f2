@@ -1,0 +1,17 @@
+package com.example.demo;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
+
+@EnableR2dbcRepositories  // used to enable R2DBC repositories in a Spring Boot application
+@SpringBootApplication
+@ComponentScan(basePackages = "com.app")
+public class Boot2SpringWebFluxApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(Boot2SpringWebFluxApplication.class, args);
+	}
+
+}

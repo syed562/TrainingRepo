@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Delete resource &apos;MavenDemo4_Logger&apos;" deleteContents="true" description="Delete resource &apos;MavenDemo4_Logger&apos;" element1="/MavenDemo4_Logger" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1762502993451"/>
-</session>

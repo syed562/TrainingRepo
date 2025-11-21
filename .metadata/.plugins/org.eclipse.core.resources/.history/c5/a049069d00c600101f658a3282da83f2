@@ -1,0 +1,41 @@
+package com.app.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.app.models.Tutorial;
+import com.app.repo.TutorialRepo;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+@Service
+public class TutorialService {
+
+	@Autowired
+	TutorialRepo tr;
+	
+	
+	public Flux<Tutorial>findAll(){
+		return tr.findAll();
+	}
+	
+	public Flux<Tutorial>findByTitle(String title){
+		return tr.findByTitle(title);
+	}
+	
+	
+	public Mono<Tutorial>findById(int id){
+		return tr.findById(id);
+	}
+	
+	public Mono<Tutorial>save(Tutorial t){
+		return tr.save(t);
+	}
+	
+	
+	public Mono<Tutorial>update(int id,Tutorial t){
+		Tutorial temp=tr.findAllById(id);
+		
+	}
+}
