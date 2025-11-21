@@ -1,0 +1,23 @@
+package com.flightapp.models;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.Entity;
+import lombok.Data;
+
+@Entity
+@Data
+public class Flight {
+
+	private String airlinesName;
+	private String fromPlace;
+	private String destination;
+	private LocalDateTime date_time;
+	private Double proce;
+	private Integer no_of_seats;
+	private Integer availableseats;
+	
+	List<Seat>seats=new ArrayList<>();
+}

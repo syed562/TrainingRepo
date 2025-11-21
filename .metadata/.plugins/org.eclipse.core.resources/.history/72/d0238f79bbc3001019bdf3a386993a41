@@ -1,0 +1,45 @@
+package com.flightapp.models;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.Data;
+
+@Entity
+@Data
+@Table(name="flights")
+public class Flight {
+
+	@Id
+	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	private Long flightid;
+	
+	
+	private String flightNo;
+	
+	@ManyToOne
+	@JoinColumn(name="airline_id",nullable=false)
+	private Airline airline;
+	
+ 
+	
+	
+	private String fromPlace;
+	private String destination;
+	private LocalDateTime date_time;
+	private Double price;
+	private Integer no_of_seats;
+	private Integer availableseats;
+	
+	private String tripType;
+	
+	
+}

@@ -1,0 +1,73 @@
+package com.flightapp.controller;
+
+package com.flightapp.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import com.flightapp.dto.BookingRequest;
+import com.flightapp.dto.FlighRequestSearch;
+import com.flightapp.dto.InventoryRequest;
+import com.flightapp.dto.BookingResponse;
+import com.flightapp.dto.FlightResponse;
+import com.flightapp.service.FlightService;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+@RestController
+@RequestMapping("/api/flights")
+@CrossOrigin
+public class FlightController {
+
+    @Autowired
+    private FlightService flightService;
+
+    // -------------------------------------------------------------------------
+    // Add Flight Inventory  (ADMIN)
+    // -------------------------------------------------------------------------
+    @PostMapping("/inventory")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<FlightResponse> addFlight(@RequestBody InventoryRequest req) {
+        return flightService.addFlightInventory(req);
+    }
+
+    // -------------------------------------------------------------------------
+    // Search Flights
+    // -------------------------------------------------------------------------
+    @PostMapping("/search")
+    @ResponseStatus(HttpStatus.OK)
+    public Flux<FlightResponse> searchFlights(@RequestBody FlighRequestSearch req) {
+        return flightService.searchFlights(req);
+    }
+
+    // -------------------------------------------------------------------------
+    // Book Ticket
+    // -------------------------------------------------------------------------
+    @PostMapping("/book/{flightId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<BookingResponse> bookTicket(
+            @PathVariable Long flightId,
+            @RequestBody BookingRequest req) {
+        return flightService.bookTicket(flightId, req);
+    }
+
+    // -------------------------------------------------------------------------
+    // Get Ticket by PNR
+    // -------------------------------------------------------------------------
+    @GetMapping("/ticket/{pnr}")
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<BookingResponse> getTicketByPnr(@PathVariable String pnr) {
+        return flightService.getTicketByPnr(pnr);
+    }
+
+    // -------------------------------------------------------------------------
+    // Cancel Ticket by PNR
+    // -------------------------------------------------------------------------
+    @PutMapping("/cancel/{pnr}")
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<String> cancelBooking(@PathVariable String pnr) {
+        return flightService.cancelBooking(pnr);
+    }
+}

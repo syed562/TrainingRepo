@@ -1,0 +1,59 @@
+package com.example.demo;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.query.Param;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.exceptions.IllgealStateException;
+import com.example.service.StudentService;
+
+@RestController
+@RequestMapping(path = "api/student")
+public class StudentController {
+
+
+	private final StudentService sr;
+	
+	@Autowired
+	public StudentController(StudentService sr) {
+		
+		this.sr = sr;
+	}
+
+
+	@GetMapping("/get")
+	public List<Student>display(){
+		return sr.getStud();
+	}
+	
+	@PostMapping("/add")
+	public Student addStud(@RequestBody Student s) throws IllgealStateException {
+		return sr.addStudent(s);
+	}
+	
+	@DeleteMapping("/delete/{id}")
+	public void deleteStudentById(@PathVariable Long id) {
+	
+		sr.deleteStudent(id);
+	}
+	
+	@PutMapping("/update")
+	public void updateStudent(@PathVariable("id") Long id,
+			@RequestParam(required=false)String name,
+			@RequestParam(required=false)String email) {
+		sr.update(id,name,email);
+	}
+
+}

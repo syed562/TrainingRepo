@@ -1,0 +1,20 @@
+package com.flight.repo;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.flightapp.models.Flight;
+
+@Repository
+public interface FlightRepo  extends CrudRepository<Flight,Long>{
+    @Query("SELECT f FROM Flight f WHERE f.fromPlace = :from AND f.toPlace = :to " +
+            "AND DATE(f.departureTime) = DATE(:date) AND f.availableSeats > 0")
+     List<Flight> searchFlights(String fromPlace, 
+                                 String toPlace,
+                                LocalDateTime date);
+}

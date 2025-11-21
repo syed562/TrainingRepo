@@ -1,0 +1,5 @@
+spring.application.name=FlightBookingSystemWebFlux
+
+spring.r2dbc.url=r2dbc:h2:mem:///./webfluxtestdb
+spring.sql.init.mode=always
+spring.r2dbc.properties.dialect=h2

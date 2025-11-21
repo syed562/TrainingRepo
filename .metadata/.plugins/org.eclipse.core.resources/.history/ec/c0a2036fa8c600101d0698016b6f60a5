@@ -1,0 +1,20 @@
+package com.flightapp.models;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+import lombok.Data;
+
+
+@Data
+public class Passenger {
+
+    @Id
+    private Long passengerId;
+
+    private Long bookingId;        // ✔ store booking reference as FK
+    private String passengerName;
+    private String gender;
+    private Integer age;
+    private String mealPreference;
+    private String seatNumber;
+}

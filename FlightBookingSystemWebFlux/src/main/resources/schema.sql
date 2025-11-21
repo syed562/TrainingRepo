@@ -1,0 +1,56 @@
+DROP TABLE IF EXISTS passengers;
+DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS flights;
+DROP TABLE IF EXISTS airlines;
+
+-- AIRLINES TABLE
+CREATE TABLE airlines (
+    id BIGSERIAL PRIMARY KEY,
+    airline_name VARCHAR(100) NOT NULL,
+    airline_logo VARCHAR(255)
+);
+
+-- FLIGHTS TABLE
+CREATE TABLE flights (
+    flight_id BIGSERIAL PRIMARY KEY,
+    flight_number VARCHAR(50) NOT NULL,
+    airline_id BIGINT NOT NULL,
+    from_place VARCHAR(100) NOT NULL,
+    to_place VARCHAR(100) NOT NULL,
+    departure_time TIMESTAMP NOT NULL,
+    arrival_time TIMESTAMP NOT NULL,
+    price DOUBLE PRECISION NOT NULL,
+    total_seats INT NOT NULL,
+    available_seats INT NOT NULL,
+    trip_type VARCHAR(30) NOT NULL,
+    CONSTRAINT fk_flight_airline FOREIGN KEY (airline_id)
+        REFERENCES airlines(id) ON DELETE CASCADE
+);
+
+-- BOOKINGS TABLE
+CREATE TABLE bookings (
+    booking_id BIGSERIAL PRIMARY KEY,
+    pnr VARCHAR(20) UNIQUE NOT NULL,
+    flight_id BIGINT NOT NULL,
+    email_id VARCHAR(100) NOT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    number_of_seats INT NOT NULL,
+    booking_date TIMESTAMP NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    total_amount DOUBLE PRECISION NOT NULL,
+    CONSTRAINT fk_booking_flight FOREIGN KEY (flight_id)
+        REFERENCES flights(flight_id) ON DELETE CASCADE
+);
+
+-- PASSENGERS TABLE
+CREATE TABLE passengers (
+    passenger_id BIGSERIAL PRIMARY KEY,
+    booking_id BIGINT NOT NULL,
+    passenger_name VARCHAR(100) NOT NULL,
+    gender VARCHAR(10) NOT NULL,
+    age INT NOT NULL,
+    meal_preference VARCHAR(50),
+    seat_number VARCHAR(10),
+    CONSTRAINT fk_passenger_booking FOREIGN KEY (booking_id)
+        REFERENCES bookings(booking_id) ON DELETE CASCADE
+);

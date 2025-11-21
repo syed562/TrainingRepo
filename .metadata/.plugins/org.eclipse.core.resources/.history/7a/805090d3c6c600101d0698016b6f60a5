@@ -1,0 +1,7 @@
+spring.application.name=FlightBookingSystemWebFlux
+
+spring.r2dbc.url=r2dbc:h2:file:///C:/data/testdb
+
+spring.sql.init.mode=always
+spring.sql.init.schema-locations=classpath:schema.sql
+spring.jpa.hibernate.ddl-auto=none   # IMPORTANT

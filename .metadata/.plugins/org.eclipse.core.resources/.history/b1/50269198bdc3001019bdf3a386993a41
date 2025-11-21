@@ -1,0 +1,11 @@
+package com.flight.repo;
+
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
+
+import com.flightapp.models.Flight;
+
+@Repository
+public interface FlightRepo  extends CrudRepository<Flight,Long>{
+
+}

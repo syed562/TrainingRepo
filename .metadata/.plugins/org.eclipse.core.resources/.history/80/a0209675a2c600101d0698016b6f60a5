@@ -1,0 +1,22 @@
+package com.flightapp.repo;
+
+import java.time.LocalDate;
+
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.stereotype.Repository;
+
+import com.flightapp.dto.FlightResponse;
+import com.flightapp.models.Flight;
+
+import reactor.core.publisher.Flux;
+
+@Repository
+public interface FlightRepo extends ReactiveCrudRepository<Flight, Long> {
+
+	Flux<FlightResponse> searcFlights(
+	        String fromPlace,
+	        String toPlace,
+	        LocalDate departureDate
+	);
+
+}

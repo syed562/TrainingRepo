@@ -1,0 +1,26 @@
+package com.flightapp.models;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.coarta.persistence.GeneratedValue;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
+import jakarta.persistence.GenerationType;
+import lombok.Data;
+
+
+@Data
+
+public class Airline {
+
+	
+	  
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(nullable = false, unique = true)
+    private String airlineName;
+    
+    private String airlineLogo;
+}

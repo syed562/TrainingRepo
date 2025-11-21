@@ -1,0 +1,238 @@
+package com.flightapp.service;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.flightapp.dto.BookingRequest;
+import com.flightapp.dto.BookingResponse;
+import com.flightapp.dto.FlighRequestSearch;
+import com.flightapp.dto.FlightResponse;
+import com.flightapp.dto.InventoryRequest;
+import com.flightapp.dto.PassengerDetails;
+import com.flightapp.models.Booking;
+import com.flightapp.models.Flight;
+import com.flightapp.models.Passenger;
+import com.flightapp.models.PnrGenerator;
+import com.flightapp.repo.BookingRepo;
+import com.flightapp.repo.FlightRepo;
+import com.flightapp.repo.PassengerRepo;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+@Service
+public class FlightService {
+
+    @Autowired
+    private FlightRepo flightRepo;
+
+    @Autowired
+    private BookingRepo bookingRepo;
+
+    @Autowired
+    private AirlineRepos airlineRepo;
+
+    @Autowired
+    private PassengerRepo passengerRepo;
+
+    // -------------------------------------------------------------
+    // 1) Add Flight Inventory
+    // -------------------------------------------------------------
+    public Mono<FlightResponse> addFlightInventory(InventoryRequest req) {
+        return airlineRepo.findById(req.getAirlineId())
+            .switchIfEmpty(Mono.error(new RuntimeException("Airline not found")))
+            .flatMap(al -> {
+                Flight f = new Flight();
+                f.setFlightNumber(req.getFlightNumber());
+                f.setAirlineId(al.getId());                // store airlineId
+                f.setFromPlace(req.getFromPlace());
+                f.setToPlace(req.getToPlace());
+                f.setDepartureTime(req.getDepartureTime());
+                f.setArrivalTime(req.getArrivalTime());
+                f.setPrice(req.getPrice());
+                f.setTotalSeats(req.getTotalSeats());
+                f.setAvailableSeats(req.getTotalSeats());
+                f.setTripType(req.getTripType());
+                return flightRepo.save(f);
+            })
+            .map(this::mapToFlightResponse);
+    }
+
+    // -------------------------------------------------------------
+    // 2) Search Flights
+    // -------------------------------------------------------------
+    public Flux<FlightResponse> searchFlights(FlighRequestSearch req) {
+        return flightRepo.searchFlights(
+                req.getFromPlace(),
+                req.getToPlace(),
+                req.getDepartDate()
+        ).map(this::mapToFlightResponse);
+    }
+
+    // -------------------------------------------------------------
+    // 3) Book Ticket
+    // -------------------------------------------------------------
+    public Mono<BookingResponse> bookTicket(Long flightId, BookingRequest bookingReq) {
+        return flightRepo.findById(flightId)
+            .switchIfEmpty(Mono.error(new RuntimeException("Flight not found")))
+            .flatMap(flight -> {
+                if (flight.getAvailableSeats() < bookingReq.getNumberOfSeats())
+                    return Mono.error(new RuntimeException("Not enough seats available"));
+
+                if (bookingReq.getPassengers().size() != bookingReq.getNumberOfSeats())
+                    return Mono.error(new RuntimeException("Passenger count mismatch"));
+
+                Booking booking = new Booking();
+                booking.setPnr(PnrGenerator.generatePnr());
+                booking.setFlight(flight);
+                booking.setEmailId(bookingReq.getEmailId());
+                booking.setUserName(bookingReq.getUserName());
+                booking.setNumberOfSeats(bookingReq.getNumberOfSeats());
+                booking.setBookingDate(LocalDateTime.now());
+                booking.setStatus("CONFIRMED");
+                booking.setTotalAmount(flight.getPrice() * bookingReq.getNumberOfSeats());
+
+                return bookingRepo.save(booking)
+                    .flatMap(saved -> {
+                        List<Passenger> paxList = bookingReq.getPassengers().stream()
+                            .map(pd -> {
+                                Passenger p = new Passenger();
+                                p.setBooking(saved);
+                                p.setPassenger_name(pd.getPassenger_name());
+                                p.setGender(pd.getGender());
+                                p.setAge(pd.getAge());
+                                p.setMealPreference(pd.getMealPreference());
+                                p.setSeatNumber(pd.getSeatNo());
+                                return p;
+                            })
+                            .toList();
+
+                        return passengerRepo.saveAll(paxList).collectList()
+                            .flatMap(savedPassengers -> {
+                                flight.setAvailableSeats(
+                                    flight.getAvailableSeats() - bookingReq.getNumberOfSeats()
+                                );
+
+                                return flightRepo.save(flight)
+                                    .thenReturn(mapToBookingResponse(saved, flight, savedPassengers));
+                            });
+                    });
+            });
+    }
+
+    // -------------------------------------------------------------
+    // 4) Get Ticket by PNR
+    // -------------------------------------------------------------
+    public Mono<BookingResponse> getTicketByPnr(String pnr) {
+        return bookingRepo.findByPnr(pnr)
+            .switchIfEmpty(Mono.error(new RuntimeException("Booking not found")))
+            .flatMap(booking ->
+                flightRepo.findById(booking.getFlight().getFlightId())
+                    .flatMap(flight ->
+                        passengerRepo.findByBookingId(booking.getId())
+                            .collectList()
+                            .map(pax -> mapToBookingResponse(booking, flight, pax))
+                    )
+            );
+    }
+
+    // -------------------------------------------------------------
+    // 5) Get Booking History
+    // -------------------------------------------------------------
+    public Flux<BookingResponse> getBookingHistory(String emailId) {
+        return bookingRepo.findByEmailIdOrderByBookingDateDesc(emailId)
+            .flatMap(booking ->
+                flightRepo.findById(booking.getFlight())
+                    .flatMap(flight ->
+                        passengerRepo.findByBookingId(booking.getId())
+                            .collectList()
+                            .map(pax -> mapToBookingResponse(booking, flight, pax))
+                    )
+            );
+    }
+
+    // -------------------------------------------------------------
+    // 6) Cancel Booking
+    // -------------------------------------------------------------
+    public Mono<String> cancelBooking(String pnr) {
+        return bookingRepo.findByPnr(pnr)
+            .switchIfEmpty(Mono.error(new RuntimeException("Booking not found")))
+            .flatMap(booking -> {
+                return flightRepo.findById(booking.getFlight().getFlightId())
+                    .flatMap(flight -> {
+                        long hours = ChronoUnit.HOURS.between(
+                            LocalDateTime.now(), flight.getDepartureTime()
+                        );
+
+                        if (hours < 24)
+                            return Mono.error(new RuntimeException("Cannot cancel within 24 hours"));
+
+                        booking.setStatus("CANCELLED");
+
+                        return bookingRepo.save(booking)
+                            .then(Mono.defer(() -> {
+                                flight.setAvailableSeats(
+                                    flight.getAvailableSeats() + booking.getNumberOfSeats()
+                                );
+                                return flightRepo.save(flight);
+                            }))
+                            .thenReturn("Booking cancelled successfully. PNR: " + pnr);
+                    });
+            });
+    }
+
+    // -------------------------------------------------------------
+    // Mapping Methods
+    // -------------------------------------------------------------
+    private FlightResponse mapToFlightResponse(Flight flight) {
+        FlightResponse r = new FlightResponse();
+        r.setFlightId(flight.getFlightId());
+        r.setFlightNumber(flight.getFlightNumber());
+        r.setAirlineName(flight.getAirline().getAirlineName());
+        r.setFromPlace(flight.getFromPlace());
+        r.setToPlace(flight.getToPlace());
+        r.setDepartTime(flight.getDepartureTime());
+        r.setArrivalTime(flight.getArrivalTime());
+        r.setPrice(flight.getPrice());
+        r.setAvailableSeats(flight.getAvailableSeats());
+        r.setTripType(flight.getTripType());
+        return r;
+    }
+
+    private BookingResponse mapToBookingResponse(
+            Booking booking, Flight flight, List<Passenger> passengers) {
+
+        BookingResponse r = new BookingResponse();
+        r.setPnr(booking.getPnr());
+        r.setFlightNumber(flight.getFlightNumber());
+        r.setAirlineName(flight.getAirline().getAirlineName());
+        r.setUserName(booking.getUserName());
+        r.setEmailId(booking.getEmailId());
+        r.setNumberOfSeats(booking.getNumberOfSeats());
+        r.setBookingDate(booking.getBookingDate());
+        r.setDepartureTime(flight.getDepartureTime());
+        r.setFromPlace(flight.getFromPlace());
+        r.setToPlace(flight.getToPlace());
+        r.setStatus(booking.getStatus());
+        r.setTotalAmount(booking.getTotalAmount());
+
+        List<PassengerDetails> paxDto = passengers.stream()
+            .map(p -> {
+                PassengerDetails pd = new PassengerDetails();
+                pd.setPassenger_name(p.getPassenger_name());
+                pd.setGender(p.getGender());
+                pd.setAge(p.getAge());
+                pd.setMealType(p.getMealPreference());
+                pd.setSeatNo(p.getSeatNumber());
+                return pd;
+            })
+            .toList();
+
+        r.setPassengers(paxDto);
+        return r;
+    }
+}

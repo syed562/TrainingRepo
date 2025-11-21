@@ -1,0 +1,47 @@
+package com.flightapp.models;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import lombok.Data;
+
+@Table(name = "bookings")
+@Data
+
+public class Booking {
+    
+   @I d
+private Long bookingId;
+    
+   
+ private String pnr;
+private Flight flight;
+    
+  
+ private String emailId;
+ 
+private String userName;
+
+    
+   
+private Integer numberOfSeats;
+    
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
+private List<Passenger> passengers;
+    
+    @Column(nullable = false)
+private LocalDateTime bookingDate;
+    
+    @Column(nullable = false)
+  private String status; 
+    
+    private Double totalAmount;
+}

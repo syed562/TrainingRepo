@@ -1,0 +1,20 @@
+package com.flight.request;
+
+import java.time.LocalDate;
+
+import org.antlr.v4.runtime.misc.NotNull;
+
+import jakarta.validation.constraints.NotBlank;
+
+public class FlighRequestSearch {
+
+	
+	  @NotBlank(message = "From place is required")
+	    private String fromPlace;
+	    
+	    @NotBlank(message = "To place is required")
+	    private String toPlace;
+	    private LocalDate departDate;  
+	    private String tripType; 
+	
+}

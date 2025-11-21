@@ -1,0 +1,223 @@
+package com.flightapp.unittest;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flightapp.controller.FlightController;
+import com.flightapp.dto.BookingRequest;
+import com.flightapp.dto.BookingResponse;
+import com.flightapp.dto.FlighRequestSearch;
+import com.flightapp.dto.FlightResponse;
+import com.flightapp.dto.InventoryRequest;
+import com.flightapp.models.Airline;
+import com.flightapp.models.Booking;
+import com.flightapp.models.Flight;
+import com.flightapp.repo.AirlineRepos;
+import com.flightapp.repo.BookingRepo;
+import com.flightapp.repo.FlightRepo;
+import com.flightapp.repo.PassengerRepo;
+import com.flightapp.service.FlightService;
+
+@ExtendWith(MockitoExtension.class)
+@WebMvcTest(FlightController.class)
+class FlightServiceTest {
+
+    /* ---------------- Controller Test Setup ---------------- */
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
+    private FlightService flightService;
+
+    /* ---------------- Service Layer Mocks ---------------- */
+    @Mock private FlightRepo flightRepository;
+    @Mock private BookingRepo bookingRepository;
+    @Mock private AirlineRepos airlineRepository;
+    @Mock private PassengerRepo passengerRepository;
+
+    @InjectMocks
+    private FlightService flightServiceReal;
+
+    private Airline airline;
+    private Flight flight;
+    private Booking booking;
+
+    @BeforeEach
+    void setUp() {
+        airline = new Airline();
+        airline.setId(1L);
+        airline.setAirlineName("Air India");
+        airline.setAirlineLogo("airindialogo.png");
+
+        flight = new Flight();
+        flight.setFlightId(1L);
+        flight.setFlightNumber("AI101");
+        flight.setAirline(airline);
+        flight.setFromPlace("Delhi");
+        flight.setToPlace("Mumbai");
+        flight.setDepartureTime(LocalDateTime.now().plusDays(2));
+        flight.setArrivalTime(LocalDateTime.now().plusDays(2).plusHours(2));
+        flight.setPrice(5000.0);
+        flight.setTotalSeats(100);
+        flight.setAvailableSeats(100);
+        flight.setTripType("one-way");
+
+        booking = new Booking();
+        booking.setBookingId(1L);
+        booking.setPnr("PNR202411171A2B");
+        booking.setFlight(flight);
+        booking.setEmailId("test@example.com");
+        booking.setUserName("Test User");
+        booking.setNumberOfSeats(2);
+        booking.setBookingDate(LocalDateTime.now());
+        booking.setStatus("CONFIRMED");
+        booking.setTotalAmount(10000.0);
+        booking.setPassengers(new ArrayList<>());
+    }
+
+    /* -------------------- SERVICE LAYER TESTS -------------------- */
+    // << SAME SERVICE TEST METHODS YOU ALREADY HAVE — NO CHANGE >>
+    // (They remain as-is to keep service coverage)
+
+    /* -------------------- CONTROLLER TESTS ADDED -------------------- */
+
+    @Test
+    void testAddInventory_Controller() throws Exception {
+        FlightResponse response = new FlightResponse();
+        response.setFlightNumber("AI101");
+
+        when(flightService.addFlightInventory(any())).thenReturn(response);
+
+        InventoryRequest req = new InventoryRequest();
+        req.setFlightNumber("AI101");
+
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/flight/airline/inventory/add")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req))
+        )
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.flightNumber").value("AI101"));
+    }
+
+    @Test
+    void testSearchFlights_Controller() throws Exception {
+        FlightResponse f = new FlightResponse();
+        f.setFlightNumber("AI101");
+        when(flightService.searchFlights(any())).thenReturn(List.of(f));
+
+        FlighRequestSearch req = new FlighRequestSearch();
+        req.setFromPlace("Delhi");
+        req.setToPlace("Mumbai");
+
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/flight/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req))
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].flightNumber").value("AI101"));
+    }
+
+    @Test
+    void testBookTicket_Controller() throws Exception {
+        BookingResponse response = new BookingResponse();
+        response.setUserName("Test User");
+
+        when(flightService.bookTicket(anyLong(), any())).thenReturn(response);
+
+        BookingRequest req = new BookingRequest();
+        req.setUserName("Test User");
+        req.setEmailId("test@example.com");
+        req.setNumberOfSeats(2);
+
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/flight/booking/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req))
+        )
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.userName").value("Test User"));
+    }
+
+    @Test
+    void testGetTicketByPnr_Controller() throws Exception {
+        BookingResponse response = new BookingResponse();
+        response.setPnr("PNR123");
+
+        when(flightService.getTicketByPnr("PNR123")).thenReturn(response);
+
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/flight/ticket/PNR123")
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.pnr").value("PNR123"));
+    }
+
+    @Test
+    void testBookingHistory_Controller() throws Exception {
+        BookingResponse b = new BookingResponse();
+        b.setUserName("Test User");
+
+        when(flightService.getBookingHistory("test@gmail.com")).thenReturn(List.of(b));
+
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/flight/booking/history/test@gmail.com")
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].userName").value("Test User"));
+    }
+
+    @Test
+    void testCancelBooking_Controller() throws Exception {
+        when(flightService.cancelBooking("PNR123")).thenReturn("Booking cancelled successfully");
+
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/flight/booking/cancel/PNR123")
+        )
+        .andExpect(status().isOk())
+        .andExpect(content().string("Booking cancelled successfully"));
+    }
+
+    @Test
+    void testGetTicketByPnr_Controller_Failure() throws Exception {
+        when(flightService.getTicketByPnr(anyString())).thenThrow(new RuntimeException("Ticket not found"));
+
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/flight/ticket/INVALID")
+        )
+        .andExpect(status().is4xxClientError());
+    }
+}

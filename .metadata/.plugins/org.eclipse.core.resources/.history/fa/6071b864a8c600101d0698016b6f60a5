@@ -1,0 +1,36 @@
+package com.flightapp.models;
+
+import java.time.LocalDateTime;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+import lombok.Data;
+
+@Table("bookings")
+@Data
+public class Booking {
+    @Id
+    @Column("booking_id")
+    private Long bookingId;
+
+    private String pnr;
+
+    @Column("flight_id")
+    private Long flightId;
+
+    @Column("email_id")
+    private String emailId;
+
+    @Column("user_name")
+    private String userName;
+
+    @Column("number_of_seats")
+    private Integer numberOfSeats;
+
+    @Column("booking_date")
+    private LocalDateTime bookingDate;
+
+    private String status;
+
+    @Column("total_amount")
+    private Double totalAmount;
+}

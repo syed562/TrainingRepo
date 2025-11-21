@@ -1,0 +1,232 @@
+package com.flightapp.service;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.flightapp.dto.BookingRequest;
+import com.flightapp.dto.BookingResponse;
+import com.flightapp.dto.FlighRequestSearch;
+import com.flightapp.dto.FlightResponse;
+import com.flightapp.dto.InventoryRequest;
+import com.flightapp.dto.PassengerDetails;
+import com.flightapp.models.Airline;
+import com.flightapp.models.Booking;
+import com.flightapp.models.Flight;
+import com.flightapp.models.Passenger;
+import com.flightapp.models.PnrGenerator;
+import com.flightapp.repo.AirlineRepos;
+import com.flightapp.repo.BookingRepo;
+import com.flightapp.repo.FlightRepo;
+import com.flightapp.repo.PassengerRepo;
+
+@Service
+public class FlightService {
+    
+    @Autowired
+    private FlightRepo flightRepository;
+    
+    @Autowired
+    private BookingRepo bookingRepository;
+    
+    @Autowired
+    private AirlineRepos airlineRepository;
+    
+    @Autowired
+    private PassengerRepo passengerRepository;
+    
+    @Transactional
+    public FlightResponse addFlightInventory(InventoryRequest request) {
+       
+        Airline airline = airlineRepository.findById(request.getAirlineId())
+            .orElseThrow(() -> new RuntimeException("Airline not found"));
+        
+        
+        Flight flight = new Flight();
+        flight.setFlightNumber(request.getFlightNumber());
+        flight.setAirline(airline);
+        flight.setFromPlace(request.getFromPlace());
+        flight.setToPlace(request.getToPlace());
+        flight.setDepartureTime(request.getDepartureTime());
+        flight.setArrivalTime(request.getArrivalTime());
+        flight.setPrice(request.getPrice());
+        flight.setTotalSeats(request.getTotalSeats());
+        flight.setAvailableSeats(request.getTotalSeats());
+        flight.setTripType(request.getTripType());
+        
+        flight = flightRepository.save(flight);
+        
+        return mapToFlightResponse(flight);
+    }
+    
+    public List<FlightResponse> searchFlights(FlighRequestSearch searchRequest) {
+        LocalDateTime searchDate = searchRequest.getDepartDate().atStartOfDay();
+        
+        List<Flight> flights = flightRepository.searchFlights(
+            searchRequest.getFromPlace(),
+            searchRequest.getToPlace(),
+            searchDate
+        );
+        
+        return flights.stream()
+            .map(this::mapToFlightResponse)
+            .collect(Collectors.toList());
+    }
+    
+    @Transactional
+    public BookingResponse bookTicket(Long flightId, BookingRequest bookingRequest) {
+        
+        Flight flight = flightRepository.findById(flightId)
+            .orElseThrow(() -> new RuntimeException("Flight not found"));
+        
+        
+        if (flight.getAvailableSeats() < bookingRequest.getNumberOfSeats()) {
+            throw new RuntimeException("Not enough seats available");
+        }
+        
+       
+        if (bookingRequest.getPassengers().size() != bookingRequest.getNumberOfSeats()) {
+            throw new RuntimeException("Passenger count does not match number of seats");
+        }
+        
+       
+        Booking booking = new Booking();
+        booking.setPnr(PnrGenerator.generatePnr());
+        booking.setFlight(flight);
+        booking.setEmailId(bookingRequest.getEmailId());
+        booking.setUserName(bookingRequest.getUserName());
+        booking.setNumberOfSeats(bookingRequest.getNumberOfSeats());
+        booking.setBookingDate(LocalDateTime.now());
+        booking.setStatus("CONFIRMED");
+        booking.setTotalAmount(flight.getPrice() * bookingRequest.getNumberOfSeats());
+        
+        booking = bookingRepository.save(booking);
+        
+      
+        List<Passenger> passengers = new ArrayList<>();
+        for (PassengerDetails pd : bookingRequest.getPassengers()) {
+            Passenger passenger = new Passenger();
+            passenger.setBooking(booking);
+            passenger.setPassengerName(pd.getPassenger_name());
+            passenger.setGender(pd.getGender());
+            passenger.setAge(pd.getAge());
+            passenger.setMealPreference(pd.getMealPreference());
+            passenger.setSeatNumber(pd.getSeatNo());
+            passengers.add(passenger);
+        }
+        
+        passengers = (List<Passenger>) passengerRepository.saveAll(passengers);
+        booking.setPassengers(passengers);
+        
+        
+        flight.setAvailableSeats(flight.getAvailableSeats() - bookingRequest.getNumberOfSeats());
+        flightRepository.save(flight);
+        
+        return mapToBookingResponse(booking);
+    }
+    
+    public BookingResponse getTicketByPnr(String pnr) {
+        Booking booking = bookingRepository.findByPnr(pnr)
+            .orElseThrow(() -> new RuntimeException("Booking not found with PNR: " + pnr));
+        
+        return mapToBookingResponse(booking);
+    }
+    
+    
+    public List<BookingResponse> getBookingHistory(String emailId) {
+        List<Booking> bookings = bookingRepository.findByEmailIdOrderByBookingDateDesc(emailId);
+        
+        return bookings.stream()
+            .map(this::mapToBookingResponse)
+            .collect(Collectors.toList());
+    }
+    
+   
+    @Transactional
+    public String cancelBooking(String pnr) {
+        Booking booking = bookingRepository.findByPnr(pnr)
+            .orElseThrow(() -> new RuntimeException("Booking not found with PNR: " + pnr));
+       
+        if ("CANCELLED".equals(booking.getStatus())) {
+            throw new RuntimeException("Booking is already cancelled");
+        }
+        
+        
+        long hoursUntilDeparture = ChronoUnit.HOURS.between(
+            LocalDateTime.now(), 
+            booking.getFlight().getDepartureTime()
+        );
+        
+        if (hoursUntilDeparture < 24) {
+            throw new RuntimeException("Cannot cancel booking within 24 hours of departure");
+        }
+        
+        
+        booking.setStatus("CANCELLED");
+        bookingRepository.save(booking);
+        
+      
+        Flight flight = booking.getFlight();
+        flight.setAvailableSeats(flight.getAvailableSeats() + booking.getNumberOfSeats());
+        flightRepository.save(flight);
+        
+        return "Booking cancelled successfully. PNR: " + pnr;
+    }
+    
+    
+    private FlightResponse mapToFlightResponse(Flight flight) {
+        FlightResponse response = new FlightResponse();
+        response.setFlightId(flight.getFlightId());
+        response.setFlightNumber(flight.getFlightNumber());
+        response.setAirlineName(flight.getAirline().getAirlineName());
+        response.setAirlineLogo(flight.getAirline().getAirlineLogo());
+        response.setFromPlace(flight.getFromPlace());
+        response.setToPlace(flight.getToPlace());
+        response.setDepartTime(flight.getDepartureTime());
+        response.setArrivalTime(flight.getArrivalTime());
+        response.setPrice(flight.getPrice());
+        response.setAvailableSeats(flight.getAvailableSeats());
+        response.setTripType(flight.getTripType());
+        return response;
+    }
+    
+   
+    private BookingResponse mapToBookingResponse(Booking booking) {
+        BookingResponse response = new BookingResponse();
+        response.setPnr(booking.getPnr());
+        response.setFlightNumber(booking.getFlight().getFlightNumber());
+        response.setAirlineName(booking.getFlight().getAirline().getAirlineName());
+        response.setUserName(booking.getUserName());
+        response.setEmailId(booking.getEmailId());
+        response.setNumberOfSeats(booking.getNumberOfSeats());
+        response.setBookingDate(booking.getBookingDate());
+        response.setDepartureTime(booking.getFlight().getDepartureTime());
+        response.setFromPlace(booking.getFlight().getFromPlace());
+        response.setToPlace(booking.getFlight().getToPlace());
+        response.setStatus(booking.getStatus());
+        response.setTotalAmount(booking.getTotalAmount());
+        
+       
+        List<PassengerDetails> passengerDetailsList = booking.getPassengers().stream()
+            .map(p -> {
+                PassengerDetails pd = new PassengerDetails();
+                pd.setPName(p.getPassengerName());
+                pd.setGender(p.getGender());
+                pd.setAge(p.getAge());
+                pd.setMealType(p.getMealPreference());
+                pd.setSeatNo(p.getSeatNumber());
+                return pd;
+            })
+            .collect(Collectors.toList());
+        
+        response.setPassengers(passengerDetailsList);
+        
+        return response;
+    }
+}

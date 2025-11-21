@@ -1,0 +1,13 @@
+package com.flightapp.models;
+
+import java.util.List;
+
+import jakarta.persistence.ManyToOne;
+
+public class Booking {
+
+	
+	@ManyToOne
+	private Flight flight;
+	private List<Passenger>people;
+}

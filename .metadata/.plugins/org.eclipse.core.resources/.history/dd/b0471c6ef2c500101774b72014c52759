@@ -1,0 +1,144 @@
+package com.flightapp.controller;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.Arrays;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flightapp.dto.BookingRequest;
+import com.flightapp.dto.BookingResponse;
+import com.flightapp.dto.FlighRequestSearch;
+import com.flightapp.dto.FlightResponse;
+import com.flightapp.dto.InventoryRequest;
+import com.flightapp.service.FlightService;
+
+@WebMvcTest(FlightController.class)
+class FlightControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
+    private FlightService flightService;
+
+    // 1️⃣ Add Inventory
+    @Test
+    void testAddInventory() throws Exception {
+        FlightResponse response = new FlightResponse();
+        response.setFlightNumber("AI101");
+        when(flightService.addFlightInventory(any())).thenReturn(response);
+
+        InventoryRequest req = new InventoryRequest();
+        req.setFlightNumber("AI101");
+
+        mockMvc.perform(post("/api/flight/airline/inventory/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.flightNumber").value("AI101"));
+    }
+
+    // 2️⃣ Search Flights
+    @Test
+    void testSearchFlights() throws Exception {
+        FlightResponse f = new FlightResponse();
+        f.setFlightNumber("AI101");
+
+        when(flightService.searchFlights(any())).thenReturn(Arrays.asList(f));
+
+        FlighRequestSearch req = new FlighRequestSearch();
+        req.setFromPlace("Delhi");
+        req.setToPlace("Mumbai");
+
+        mockMvc.perform(post("/api/flight/search")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].flightNumber").value("AI101"));
+    }
+
+    // 3️⃣ Book Ticket
+    @Test
+    void testBookTicket() throws Exception {
+        BookingResponse response = new BookingResponse();
+        response.setUserName("Test User");
+        response.setNumberOfSeats(2);
+
+        when(flightService.bookTicket(anyLong(), any())).thenReturn(response);
+
+        BookingRequest req = new BookingRequest();
+        req.setUserName("Test User");
+        req.setEmailId("test@gmail.com");
+        req.setNumberOfSeats(2);
+
+        mockMvc.perform(post("/api/flight/booking/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.userName").value("Test User"))
+                .andExpect(jsonPath("$.numberOfSeats").value(2));
+    }
+
+    // 4️⃣ Get Ticket by PNR
+    @Test
+    void testGetTicketByPnr() throws Exception {
+        BookingResponse response = new BookingResponse();
+        response.setPnr("PNR123");
+
+        when(flightService.getTicketByPnr("PNR123")).thenReturn(response);
+
+        mockMvc.perform(get("/api/flight/ticket/PNR123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pnr").value("PNR123"));
+    }
+
+    // 5️⃣ Booking History
+    @Test
+    void testGetBookingHistory() throws Exception {
+        BookingResponse response = new BookingResponse();
+        response.setUserName("Test User");
+
+        when(flightService.getBookingHistory("test@gmail.com")).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/api/flight/booking/history/test@gmail.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].userName").value("Test User"));
+    }
+
+    // 6️⃣ Cancel Booking
+    @Test
+    void testCancelBooking() throws Exception {
+        when(flightService.cancelBooking("PNR123"))
+                .thenReturn("Booking cancelled successfully");
+
+        mockMvc.perform(delete("/api/flight/booking/cancel/PNR123"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Booking cancelled successfully"));
+    }
+
+    // 7️⃣ Negative Scenario — Error coverage
+    @Test
+    void testGetTicketByPnr_NotFound() throws Exception {
+        when(flightService.getTicketByPnr(anyString()))
+                .thenThrow(new RuntimeException("Ticket not found"));
+
+        mockMvc.perform(get("/api/flight/ticket/XYZ999"))
+                .andExpect(status().is4xxClientError()); // based on your exception handler
+    }
+}

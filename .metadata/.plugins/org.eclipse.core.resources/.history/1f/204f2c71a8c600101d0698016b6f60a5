@@ -1,0 +1,30 @@
+package com.flightapp.models;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+import lombok.Data;
+
+@Table("passengers")
+@Data
+public class Passenger {
+    @Id
+    @Column("passenger_id")
+    private Long passengerId;
+
+    @Column("booking_id")
+    private Long bookingId;
+
+    @Column("passenger_name")
+    private String passengerName;
+
+    private String gender;
+
+    private Integer age;
+
+    @Column("meal_preference")
+    private String mealPreference;
+
+    @Column("seat_number")
+    private String seatNumber;
+}
+

@@ -1,0 +1,73 @@
+package com.flightapp.controller;
+import com.flightapp.dto.*;
+import com.flightapp.service.FlightService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1.0/flight")
+public class FlightController {
+    
+    @Autowired
+    private FlightService flightService;
+    
+    /**
+     * Add flight inventory/schedule
+     */
+    @PostMapping("/airline/inventory/add")
+    public ResponseEntity<FlightResponse> addInventory(@Valid @RequestBody InventoryRequest request) {
+        FlightResponse response = flightService.addFlightInventory(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+    
+    /**
+     * Search for flights
+     */
+    @PostMapping("/search")
+    public ResponseEntity<List<FlightResponse>> searchFlights(@Valid @RequestBody FlightSearchRequest searchRequest) {
+        List<FlightResponse> flights = flightService.searchFlights(searchRequest);
+        return ResponseEntity.ok(flights);
+    }
+    
+    /**
+     * Book a ticket
+     */
+    @PostMapping("/booking/{flightid}")
+    public ResponseEntity<BookingResponse> bookTicket(
+            @PathVariable("flightid") Long flightId,
+            @Valid @RequestBody BookingRequest bookingRequest) {
+        BookingResponse response = flightService.bookTicket(flightId, bookingRequest);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+    
+    /**
+     * Get ticket details by PNR
+     */
+    @GetMapping("/ticket/{pnr}")
+    public ResponseEntity<BookingResponse> getTicketByPnr(@PathVariable String pnr) {
+        BookingResponse response = flightService.getTicketByPnr(pnr);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Get booking history by email
+     */
+    @GetMapping("/booking/history/{emailId}")
+    public ResponseEntity<List<BookingResponse>> getBookingHistory(@PathVariable String emailId) {
+        List<BookingResponse> bookings = flightService.getBookingHistory(emailId);
+        return ResponseEntity.ok(bookings);
+    }
+    
+    /**
+     * Cancel a booking
+     */
+    @DeleteMapping("/booking/cancel/{pnr}")
+    public ResponseEntity<String> cancelBooking(@PathVariable String pnr) {
+        String message = flightService.cancelBooking(pnr);
+        return ResponseEntity.ok(message);
+    }
+}

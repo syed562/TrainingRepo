@@ -1,0 +1,47 @@
+package com.flightapp.models;
+
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+
+
+@Table(name = "flights")
+@Data
+
+public class Flight {
+    
+    @Id
+  
+ private Long flightId;
+    
+   
+  private String flightNumber;
+    
+   
+  private Airline airline;
+    
+   
+  private String fromPlace;
+    
+   
+  private String toPlace;
+    
+   
+  private LocalDateTime departureTime;
+    
+  
+  private LocalDateTime arrivalTime;
+    
+    
+  private Double price;
+    
+   
+ private Integer totalSeats;
+    
+   
+ private Integer availableSeats;
+private String tripType; 
+}

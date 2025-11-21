@@ -1,0 +1,28 @@
+@Entity
+@Table(name = "passengers")
+@Data
+public class Passenger {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long passengerId;
+
+    @ManyToOne
+    @JoinColumn(name = "booking_id", nullable = false)
+    private Booking booking;
+
+    @Column(name = "passenger_name", nullable = false)
+    private String passengerName;
+
+    @Column(nullable = false)
+    private String gender;
+
+    @Column(nullable = false)
+    private Integer age;
+
+    @Column(name = "meal_preference")
+    private String mealPreference;
+
+    @Column(name = "seat_number", nullable = false)
+    private String seatNumber;
+}

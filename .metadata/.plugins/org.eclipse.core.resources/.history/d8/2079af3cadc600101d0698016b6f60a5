@@ -1,0 +1,21 @@
+package com.flightapp.models;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
+import lombok.Data;
+@Table("airlines")
+@Data
+public class Airline {
+    @Id
+    @Column("id")
+    private Long id;
+
+    @Column("airline_name")
+    private String airlineName;
+
+    @Column("airline_logo")
+    private String airlineLogo;
+}
+

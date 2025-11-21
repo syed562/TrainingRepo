@@ -1,0 +1,19 @@
+package com.flightapp.repo;
+
+import java.time.LocalDate;
+
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.stereotype.Repository;
+
+import com.flightapp.dto.FlightResponse;
+import com.flightapp.models.Flight;
+
+import reactor.core.publisher.Flux;
+
+@Repository
+
+public interface FlightRepo extends ReactiveCrudRepository<Flight, Long> {
+
+    @Query("SELECT * FROM flights WHERE from_place = :from AND to_place = :to AND DATE(departure_time) = :date")
+    Flux<Flight> searchFlights(String from, String to, LocalDate date);
+}
