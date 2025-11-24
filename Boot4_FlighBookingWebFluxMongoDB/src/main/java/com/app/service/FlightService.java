@@ -59,15 +59,18 @@ public class FlightService {
 				.flatMap(this::mapToFlightResponse);
 	}
 
-	public Mono<ResponseEntity<BookingResponse>> getTicketByPnr(String pnr) {
-		return bookingRepo.findByPnr(pnr)
-				.switchIfEmpty(Mono.error(new RuntimeException("Ticket not found for this PNR")))
-				.flatMap(booking -> flightRepo.findById(booking.getFlightId())
-						.flatMap(flight -> passengerRepo.findByBookingId(booking.getBookingId()).collectList()
-								.flatMap(passengers -> airlineRepo.findById(flight.getAirlineId())
-										.map(airline -> mapToBookingResponse(booking, flight, passengers, airline)))))
-				.map(ResponseEntity::ok);
+	public Mono<BookingResponse> getTicketByPnr(String pnr) {
+	    return bookingRepo.findByPnr(pnr)
+	            .switchIfEmpty(Mono.error(new RuntimeException("Ticket not found for this PNR")))
+	            .flatMap(booking -> flightRepo.findById(booking.getFlightId())
+	                    .flatMap(flight -> passengerRepo.findByBookingId(booking.getBookingId()).collectList()
+	                            .flatMap(passengers -> airlineRepo.findById(flight.getAirlineId())
+	                                    .map(airline -> mapToBookingResponse(booking, flight, passengers, airline))
+	                            )
+	                    )
+	            );
 	}
+
 
 	public Mono<String> cancelBooking(String pnr) {
 		return bookingRepo.findByPnr(pnr).switchIfEmpty(Mono.error(new RuntimeException("Booking not found")))

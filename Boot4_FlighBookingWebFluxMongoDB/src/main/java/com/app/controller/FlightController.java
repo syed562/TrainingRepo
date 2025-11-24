@@ -112,13 +112,10 @@ public class FlightController {
     @GetMapping("/ticket/{pnr}")
     public Mono<ResponseEntity<BookingResponse>> getTicket(@PathVariable String pnr) {
         return flightService.getTicketByPnr(pnr)
-                .onErrorResume(e ->
-                        Mono.just(ResponseEntity
-                                .status(HttpStatus.NOT_FOUND)
-                                .body(null)
-                        )
-                );
+                .map(ResponseEntity::ok)
+                .onErrorResume(e -> Mono.just(ResponseEntity.status(404).body(null)));
     }
+
 
 
  
