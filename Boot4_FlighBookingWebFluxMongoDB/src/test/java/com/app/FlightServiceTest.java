@@ -87,9 +87,9 @@ class FlightServiceTest {
 
     @Test
     void testSearchFlights() {
-        FlighRequestSearch req = new FlighRequestSearch("DEL", "HYD", LocalDateTime.now(), "ONE-WAY");
+        FlighRequestSearch req = new FlighRequestSearch("DEL", "HYD");
 
-        when(flightRepo.findByFromPlaceAndToPlaceAndDepartureTime(any(), any(), any()))
+        when(flightRepo.findByFromPlaceIgnoreCaseAndToPlaceIgnoreCase(any(), any()))
                 .thenReturn(Flux.just(flight));
         when(airlineRepo.findById(anyString())).thenReturn(Mono.just(airline));
 

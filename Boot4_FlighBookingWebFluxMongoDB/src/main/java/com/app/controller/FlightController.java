@@ -7,9 +7,17 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.app.dto.BookingRequest;
 import com.app.dto.BookingResponse;
@@ -63,19 +71,19 @@ public class FlightController {
 
 
 
-    @PostMapping("/search")
+    @PostMapping(value = "/search", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Flux<FlightResponse> searchFlights(@RequestBody FlighRequestSearch req) {
         return flightService.searchFlights(req);
     }
 
 
   
-    @PostMapping("/book/{flightId}")
+    @PostMapping("/book/{flightNumber}")
     public Mono<ResponseEntity<Map<String, Object>>> bookTicket(
-            @PathVariable String flightId,
+            @PathVariable String flightNumber,
             @RequestBody BookingRequest req) {
 
-        return flightService.bookTicket(flightId, req)
+        return flightService.bookTicket(flightNumber, req)
                 .map(res -> ResponseEntity.status(HttpStatus.CREATED)
                         .body(Map.of(
                                 "pnr", res.getPnr(),

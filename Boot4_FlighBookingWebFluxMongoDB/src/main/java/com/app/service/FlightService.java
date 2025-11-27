@@ -54,9 +54,12 @@ public class FlightService {
 	}
 
 	public Flux<FlightResponse> searchFlights(FlighRequestSearch req) {
-		return flightRepo
-				.findByFromPlaceAndToPlaceAndDepartureTime(req.getFromPlace(), req.getToPlace(), req.getDepartDate())
-				.flatMap(this::mapToFlightResponse);
+		
+		 return flightRepo.findAll().flatMap(this::mapToFlightResponse);
+		
+	   /* return flightRepo
+	        .findByFromPlaceIgnoreCaseAndToPlaceIgnoreCase(req.getFromPlace(), req.getToPlace())
+	        .flatMap(this::mapToFlightResponse);*/
 	}
 
 	public Mono<BookingResponse> getTicketByPnr(String pnr) {
@@ -115,9 +118,9 @@ public class FlightService {
 				b.getTotalAmount());
 	}
 
-	public Mono<BookingResponse> bookTicket(String flightId, BookingRequest req) {
+	public Mono<BookingResponse> bookTicket(String flightNum, BookingRequest req) {
 
-		return flightRepo.findById(flightId).switchIfEmpty(Mono.error(new RuntimeException("Flight not found")))
+		return flightRepo.findByFlightNumber(flightNum).switchIfEmpty(Mono.error(new RuntimeException("Flight not found")))
 				.flatMap(flight -> {
 
 					

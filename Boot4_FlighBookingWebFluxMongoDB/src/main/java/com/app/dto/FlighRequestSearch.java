@@ -19,8 +19,6 @@ public class FlighRequestSearch {
 	    
 	    @NotBlank(message = "To place is required")
 	    private String toPlace;
-	    @Future(message = "Departure date must be valid one")
-	    private LocalDateTime departDate;  
-	    private String tripType; 
+	   
 	
 }
