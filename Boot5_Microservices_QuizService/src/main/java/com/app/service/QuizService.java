@@ -1,6 +1,5 @@
 package com.app.service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +12,8 @@ import com.app.models.QuestionWrapper;
 import com.app.models.Quiz;
 import com.app.models.Response;
 import com.app.repo.QuizRepo;
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 @Service
 public class QuizService {
@@ -49,6 +50,7 @@ public class QuizService {
 		
 	}
 
+	@CircuitBreaker(name="questionService",fallbackMethod = "fallbackGetQuestions")
 	public ResponseEntity<List<QuestionWrapper>> getQuestionsByQuizId(Integer id) {
 	
 		
@@ -57,6 +59,11 @@ public class QuizService {
 		List<QuestionWrapper>quesForUsers=qint.getQuesFromIds(questionsList).getBody();
 		return new ResponseEntity<>(quesForUsers,HttpStatus.OK);
 	}
+	public ResponseEntity<List<QuestionWrapper>> fallbackGetQuestions(Integer id, Throwable ex) {
+        System.out.println("Question-Service DOWN — returning fallback response");
+        return new ResponseEntity<>(List.of(),HttpStatus.SERVICE_UNAVAILABLE);
+}
+	
 
 	public ResponseEntity<Integer> calculateResult(Integer id, List<Response> res) {
 		
@@ -66,5 +73,5 @@ public class QuizService {
 		return right;
 	}
 
-	
+
 }
