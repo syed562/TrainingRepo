@@ -1,0 +1,39 @@
+package com.example.demo.service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.example.demo.Order;
+import com.example.demo.repo.AddressRepo;
+import com.example.demo.repo.OrderRepos;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@Slf4j
+public class OrderService {
+	@Autowired
+	AddressRepo ad;
+	@Autowired
+	OrderRepos ores;
+	public void insertOrder(Order order) {
+		log.debug(order.toString());
+		ores.save(order);
+		System.out.println(order);
+	}
+	
+	public List<Order>displayOrder(){
+		Iterable<Order>list=ores.findAll();
+		List<Order>list2=new ArrayList<Order>();
+		list.forEach(list2::add);
+		return list2;
+	}
+	
+	
+	
+	
+	
+}

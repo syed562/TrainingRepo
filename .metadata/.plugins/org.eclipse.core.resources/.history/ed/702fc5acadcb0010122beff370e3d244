@@ -1,0 +1,15 @@
+package com.app.models;
+
+import java.util.List;
+
+import jakarta.persistence.Entity;
+
+@Entity
+@Data
+public class Quiz {
+
+	
+	private Integer id;
+	private String title;
+	private List<Question>questions;
+}

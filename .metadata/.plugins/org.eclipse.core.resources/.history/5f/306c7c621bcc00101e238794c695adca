@@ -1,0 +1,7 @@
+package com.app.models;
+
+public class Response {
+ String id;
+ String rightAnswer;
+	
+}

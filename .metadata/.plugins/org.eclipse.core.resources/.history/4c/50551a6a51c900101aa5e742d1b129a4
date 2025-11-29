@@ -1,0 +1,88 @@
+package com.app;
+
+import static org.hamcrest.CoreMatchers.any;
+import static org.mockito.Mockito.when;
+
+import java.time.LocalDateTime;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.web.reactive.server.WebTestClient;
+
+import com.app.controller.FlightController;
+import com.app.dto.BookingRequest;
+import com.app.dto.BookingResponse;
+import com.app.dto.PassengerDetails;
+import com.app.repo.FlightRepo;
+import com.app.service.FlightService;
+
+import reactor.core.publisher.Mono;
+
+@ExtendWith(MockitoExtension.class)
+@Import(FlightService.class)
+class FlightControllerTest {
+
+    @Autowired
+    private WebTestClient webTestClient;
+
+    @MockBean private FlightService flightService;
+    @MockBean private FlightRepo flightRepo;
+
+    BookingResponse bookingResponse;
+
+    @BeforeEach
+    void setup() {
+        bookingResponse = new BookingResponse(
+                "PNR123", "AI-101", "Air India", "Raju", "test@gmail.com",
+                1, List.of(), LocalDateTime.now(), LocalDateTime.now().plusHours(2),
+                "DEL", "HYD", "CONFIRMED", 5000.0
+        );
+    }
+
+    @Test
+    void testBookTicketAPI() {
+        when(flightService.bookTicket(eq("F1"), any()))
+                .thenReturn(Mono.just(bookingResponse));
+
+        webTestClient.post()
+                .uri("/api/flights/book/F1")
+                .bodyValue(new BookingRequest("Raju", "test@gmail.com", 1,
+                        List.of(new PassengerDetails("Raju","Male",25,"Veg","10A"))))
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody()
+                .jsonPath("$.pnr").isEqualTo("PNR123");
+    }
+
+    @Test
+    void testBookTicketAPI_Failure() {
+        when(flightService.bookTicket(eq("F1"), any()))
+                .thenReturn(Mono.error(new RuntimeException("Flight not found")));
+
+        webTestClient.post()
+                .uri("/api/flights/book/F1")
+                .bodyValue(new BookingRequest())
+                .exchange()
+                .expectStatus().isEqualTo(409)
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Flight not found");
+    }
+
+    @Test
+    void testGetTicketAPI() {
+        when(flightService.getTicketByPnr("PNR123"))
+                .thenReturn(Mono.just(ResponseEntity.ok(bookingResponse)));
+
+        webTestClient.get()
+                .uri("/api/flights/ticket/PNR123")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.pnr").isEqualTo("PNR123");
+    }
+}

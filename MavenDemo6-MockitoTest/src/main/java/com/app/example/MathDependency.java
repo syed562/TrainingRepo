@@ -1,0 +1,6 @@
+package com.app.example;
+
+public interface MathDependency {
+    int add(int a, int b);
+    int subtract(int a,int b);
+}

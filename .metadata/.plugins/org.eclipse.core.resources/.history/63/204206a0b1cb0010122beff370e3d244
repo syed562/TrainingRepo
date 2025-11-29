@@ -1,0 +1,24 @@
+package com.app.repo;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+
+import com.app.models.Question;
+
+public interface QuestionRepo extends CrudRepository<Question, Integer> {
+
+	
+List<Question> findByCaseIgnoreCategory(String category);
+
+@Query(
+		  value = "SELECT * FROM question q " +
+		          "WHERE LOWER(q.category) = LOWER(?1) " +
+		          "ORDER BY RAND() " +
+		          "LIMIT ?2",
+		  nativeQuery = true
+		)
+		List<Question> findRandomQuestionsByCategory(String category, int num);
+
+}

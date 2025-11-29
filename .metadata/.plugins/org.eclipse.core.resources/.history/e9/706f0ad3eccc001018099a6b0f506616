@@ -1,0 +1,77 @@
+package com.app.service;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.app.feign.QuizInterface;
+import com.app.models.QuestionWrapper;
+import com.app.models.Quiz;
+import com.app.models.Response;
+import com.app.repo.QuizRepo;
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+
+@Service
+public class QuizService {
+
+	@Autowired
+	QuizRepo quizRepo;
+	
+//	@Autowired
+//	QuestionRepo qr;
+	
+	@Autowired
+	QuizInterface  qint;
+	
+	public ResponseEntity<String> createQuiz(String category, int num, String title) {
+	  
+		 
+		
+//feign client -provides a way of declarative  way of requesting services
+		
+		//eureka server-we can discover api services
+		
+		//List<Integer>quesNums=              //call the generate url-RestTemplate  http://localhost:8080/questions/generate
+		
+		
+		List<Integer>quesNums=qint.getQuesForQuiz(category, num).getBody();
+		Quiz quiz=new Quiz();
+		quiz.setTitle(title);
+		quiz.setQuestions(quesNums);
+		quizRepo.save(quiz);
+		
+	
+	    return new ResponseEntity<>("created", HttpStatus.CREATED);
+		
+		
+	}
+
+	@CircuitBreaker(name="questionService",fallbackMethod = "fallbackGetQuestions")
+	public ResponseEntity<List<QuestionWrapper>> getQuestionsByQuizId(Integer id) {
+	
+		
+		Quiz quiz=quizRepo.findById(id).get();
+		List<Integer>questionsList=quiz.getQuestions();
+		List<QuestionWrapper>quesForUsers=qint.getQuesFromIds(questionsList).getBody();
+		return new ResponseEntity<>(quesForUsers,HttpStatus.OK);
+	}
+	public ResponseEntity<List<QuestionWrapper>> fallbackGetQuestions(Integer id, Throwable ex) {
+        System.out.println("Question-Service DOWN — returning fallback response");
+        return new ResponseEntity<>(List.of(),HttpStatus.SERVICE_UNAVAILABLE);
+}
+	
+
+	public ResponseEntity<Integer> calculateResult(Integer id, List<Response> res) {
+		
+		Quiz quiz=quizRepo.findById(id).get();
+		
+		ResponseEntity<Integer>right=qint.getScore(res);
+		return right;
+	}
+
+
+}

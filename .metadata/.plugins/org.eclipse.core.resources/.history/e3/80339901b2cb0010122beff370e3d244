@@ -1,0 +1,28 @@
+package com.app.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.app.models.Quiz;
+import com.app.repo.QuestionRepo;
+import com.app.repo.QuizRepo;
+
+@Service
+public class QuizService {
+
+	@Autowired
+	QuizRepo quizRepo;
+	
+	@Autowired
+	QuestionRepo qr;
+	
+	public ResponseEntity<String>createQuiz(String category,int num,String title){
+		
+		List<Question>list=
+		Quiz quiz=new Quiz();
+		quiz.setTitle(title);
+		
+	}
+	
+}

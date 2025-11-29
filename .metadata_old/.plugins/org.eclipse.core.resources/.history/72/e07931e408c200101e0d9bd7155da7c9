@@ -1,0 +1,70 @@
+package com.example.demo.service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.example.demo.Address;
+import com.example.demo.Order;
+import com.example.demo.Product;
+import com.example.demo.repo.AddressRepo;
+import com.example.demo.repo.OrderRepos;
+import com.example.demo.repo.ProductRepo;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@Slf4j
+public class OrderService {
+	@Autowired
+	AddressRepo ad;
+	@Autowired
+	OrderRepos ores;
+	@Autowired
+	ProductRepo pr;
+	public void insertOrder(Order order) {
+		log.debug(order.toString());
+		 if (order.getAddresses() != null) {
+	            for (Address a : order.getAddresses()) {
+	                a.setOrder(order);         // ⭐ makes sure order_id is not null
+	            }
+	        }
+		ores.save(order);
+		System.out.println(order);
+	}
+	
+	public List<Order>displayOrder(){
+		Iterable<Order>list=ores.findAll();
+		List<Order>list2=new ArrayList<Order>();
+		list.forEach(list2::add);
+		return list2;
+	}
+	
+	public List<Order>findByCost(float cost){
+		Iterable<Order>list=ores.findByPrice(cost);
+		List<Order>list2=new ArrayList<Order>();
+		list.forEach(list2::add);
+		return list2;
+	}
+	
+	
+	public Order createOrder(OrderRequestDto dto) {
+	    Order order = new Order();
+	    order.setItem(dto.getItem());
+	    order.setPrice(dto.getPrice());
+	    order.setQuantity(dto.getQuantity());
+
+	   List<Product> products = new ArrayList<>(
+	       pr.findAllById(dto.getProductIds())
+	    );
+	    order.setProducts(products);
+
+	    return ores.save(order);
+	}
+
+	
+	
+	
+}

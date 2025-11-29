@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;demo&apos; to &apos;Boot3_SprigWebFluxMongoDb&apos;" description="Rename resource &apos;demo&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="/demo" name="Boot3_SprigWebFluxMongoDb" stamp="1763792367379" updateReferences="true"/>
+</session>

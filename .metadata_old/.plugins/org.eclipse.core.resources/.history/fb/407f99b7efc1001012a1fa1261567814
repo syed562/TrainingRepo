@@ -1,0 +1,25 @@
+package com.example.demo.service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.example.demo.Order;
+import com.example.demo.repo.AddressRepo;
+import com.example.demo.repo.OrderRepos;
+
+public class AddressService {
+	@Autowired
+	AddressRepo ad;
+	@Autowired
+	OrderRepos ores;
+	
+	
+	public List<Order>findByCost(int id){
+		Iterable<Order>list=ad.findByOrderId(id);
+		List<Order>list2=new ArrayList<Order>();
+		list.forEach(list2::add);
+		return list2;
+	}
+}

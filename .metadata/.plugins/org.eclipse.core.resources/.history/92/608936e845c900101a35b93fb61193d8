@@ -1,0 +1,5 @@
+spring.application.name=Boot4_FlighBookingWebFluxMongoDB
+
+spring.data.mongodb.host=localhost
+spring.data.mongodb.port=27017fgmnt
+server.error.include-message=always

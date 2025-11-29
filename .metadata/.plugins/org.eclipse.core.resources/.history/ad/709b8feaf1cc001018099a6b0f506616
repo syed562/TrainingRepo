@@ -1,0 +1,2 @@
+spring.application.name=Boot5_Microservices_ConfigServer
+server.port=8888
