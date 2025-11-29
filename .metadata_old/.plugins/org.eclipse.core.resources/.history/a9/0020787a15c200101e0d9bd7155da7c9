@@ -1,6 +1,0 @@
-package com.example.demo.testing;
-
-@WebMvcTest
-public class Test {
-
-}
