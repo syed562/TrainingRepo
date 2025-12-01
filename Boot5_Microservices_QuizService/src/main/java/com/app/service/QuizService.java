@@ -23,6 +23,9 @@ public class QuizService {
 
     @Autowired
     QuizInterface qint;
+    
+    @Autowired
+    QuizEventProducer quizEventProducer;
 
     @CircuitBreaker(name = "questionService", fallbackMethod = "fallbackCreateQuiz")
     public ResponseEntity<String> createQuiz(String category, int num, String title) {
@@ -61,6 +64,7 @@ public class QuizService {
 
         Quiz quiz = quizRepo.findById(id).get();
         ResponseEntity<Integer> right = qint.getScore(res);
+        quizEventProducer.sendQuizCompletedEvent("Quiz completed by user. Score="+right);
         return right;
     }
 
