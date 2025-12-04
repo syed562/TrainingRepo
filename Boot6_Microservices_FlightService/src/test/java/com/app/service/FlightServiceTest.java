@@ -84,10 +84,10 @@ class FlightServiceTest {
         when(airlineRepository.findById(1L)).thenReturn(Optional.of(airline));
         when(flightRepository.save(any(Flight.class))).thenReturn(flight);
 
-        FlightResponse response = flightService.addFlightInventory(inventoryRequest);
+        Long response = flightService.addFlightInventory(inventoryRequest);
 
         assertNotNull(response);
-        assertEquals("AI123", response.getFlightNumber());
+        
         verify(flightRepository, times(1)).save(any(Flight.class));
     }
 

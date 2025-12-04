@@ -30,7 +30,7 @@ public class FlightService implements FlighServiceInterface {
     
  
     @Transactional
-    public FlightResponse addFlightInventory(InventoryRequest request) {
+    public Long addFlightInventory(InventoryRequest request) {
        
         Airline airline = airlineRepository.findById(request.getAirlineId())
             .orElseThrow(() -> new RuntimeException("Airline not found"));
@@ -50,7 +50,7 @@ public class FlightService implements FlighServiceInterface {
         
         flight = flightRepository.save(flight);
         
-        return mapToFlightResponse(flight);
+        return mapToFlightResponse(flight).getFlightId();
     }
     
     public List<FlightResponse> searchFlights(FlightRequestSearch searchRequest) {

@@ -40,7 +40,7 @@ public class FlightController {
     @PostMapping("airline/inventory/add")
     public ResponseEntity<?> addInventory(@Valid @RequestBody InventoryRequest request) {
         try {
-            FlightResponse response = flightService.addFlightInventory(request);
+        	Long response = flightService.addFlightInventory(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response); // 201
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage()); // 400

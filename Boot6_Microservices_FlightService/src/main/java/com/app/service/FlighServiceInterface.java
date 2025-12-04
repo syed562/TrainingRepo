@@ -8,7 +8,7 @@ import com.app.dto.InventoryRequest;
 
 public interface FlighServiceInterface {
 
-	 public FlightResponse addFlightInventory(InventoryRequest request);
+	 public Long addFlightInventory(InventoryRequest request);
 	 public List<FlightResponse> searchFlights(FlightRequestSearch searchRequest);
 	 public FlightResponse getFlightById(Long id);
 }

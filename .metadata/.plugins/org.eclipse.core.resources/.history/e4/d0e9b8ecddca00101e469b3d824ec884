@@ -1,3 +1,0 @@
-spring.application.name=Boot4_FlighBookingWebFluxMongoDB
-spring.mongodb.uri=mongodb://localhost:27017/test
-spring.data.mongodb.database=test

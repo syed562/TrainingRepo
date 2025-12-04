@@ -155,8 +155,8 @@ kafkaTemplate.send("ticket-booked",event);
     }
 
 
-    /* -------------------------------------------------------------- */
     private BookingResponse mapToResponse(Booking booking, FlightResponse flight) {
+
         BookingResponse response = new BookingResponse();
         response.setPnr(booking.getPnr());
         response.setUserName(booking.getUserName());
@@ -171,8 +171,26 @@ kafkaTemplate.send("ticket-booked",event);
         response.setAirlineName(flight.getAirlineName());
         response.setFlightNumber(flight.getFlightNumber());
         response.setDepartureTime(flight.getDepartTime());
+
+       
+        List<PassengerDetails> passengerDetails = new ArrayList<>();
+        if (booking.getPassengers() != null) {
+            for (Passenger p : booking.getPassengers()) {
+                PassengerDetails pd = new PassengerDetails();
+                pd.setPassenger_name(p.getPassenger_name());
+                pd.setGender(p.getGender());
+                pd.setAge(p.getAge());
+                pd.setMealType(p.getMealPreference());
+                pd.setSeatNo(p.getSeatNumber());
+                passengerDetails.add(pd);
+            }
+        }
+
+        response.setPassengers(passengerDetails); 
+
         return response;
     }
+
     
     public String fallbackCancelBooking(String pnr, Throwable ex) {
         return "Cancellation failed because Flight Service is unavailable. " +
