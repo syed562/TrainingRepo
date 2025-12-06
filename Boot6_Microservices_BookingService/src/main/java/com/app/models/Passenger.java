@@ -27,8 +27,9 @@ public class Passenger {
     private Booking booking;
 
     @Column(name = "passenger_name")
-    private String passenger_name;
-
+    private String passengerName;
+    @Column(name="flight_id",nullable=false)
+    private Long flightId;
     @Column(nullable = false)
     private String gender;
 

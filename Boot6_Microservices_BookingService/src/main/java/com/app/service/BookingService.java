@@ -5,7 +5,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -34,16 +36,42 @@ public class BookingService {
     private BookingInterface bint;
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
-
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(BookingService.class);
   
     @CircuitBreaker(name = "flightService", fallbackMethod = "fallbackBookTicket")
     public BookingResponse bookTicket(Long flightId, BookingRequest bookingRequest) {
 
-        FlightResponse flight = bint.getFlightById(flightId).getBody();
-        if (flight.getAvailableSeats() < bookingRequest.getNumberOfSeats()) {
-            throw new RuntimeException("Not enough seats available");
+        // 1️⃣ Get flight details safely (before saving booking)
+        FlightResponse flight;
+        try {
+            ResponseEntity<FlightResponse> flightResponse = bint.getFlightById(flightId);
+            if (flightResponse == null || flightResponse.getBody() == null) {
+                throw new RuntimeException("Flight service returned empty response");
+            }
+            flight = flightResponse.getBody();
+        } catch (Exception ex) {
+            throw new RuntimeException("Flight service is down, try again later");
         }
 
+        // 2️⃣ Check seat availability
+        if (flight.getAvailableSeats() < bookingRequest.getNumberOfSeats()) {
+            throw new IllegalStateException("Not enough seats available");
+        }
+
+        // 3️⃣ Validate seats + passengers
+        for (PassengerDetails pd : bookingRequest.getPassengers()) {
+
+            if (passengerRepository.existsByFlightIdAndSeatNumber(flightId, pd.getSeatNo())) {
+                throw new IllegalStateException("Seat " + pd.getSeatNo() + " is already booked");
+            }
+
+            if (passengerRepository.existsByFlightIdAndPassengerName(flightId, pd.getPassenger_name())) {
+                throw new IllegalStateException("Passenger " + pd.getPassenger_name() + 
+                        " already has a booking on this flight");
+            }
+        }
+
+        // 4️⃣ Create booking (only after validations)
         Booking booking = new Booking();
         booking.setPnr(PnrGenerator.generatePnr());
         booking.setFlightId(flightId);
@@ -53,32 +81,45 @@ public class BookingService {
         booking.setBookingDate(LocalDateTime.now());
         booking.setStatus("CONFIRMED");
         booking.setTotalAmount(flight.getPrice() * bookingRequest.getNumberOfSeats());
+
         booking = bookingRepository.save(booking);
 
+        // 5️⃣ Save passengers
         List<Passenger> passengers = new ArrayList<>();
         for (PassengerDetails pd : bookingRequest.getPassengers()) {
             Passenger p = new Passenger();
             p.setBooking(booking);
-            p.setPassenger_name(pd.getPassenger_name());
+            p.setFlightId(flightId);
+            p.setPassengerName(pd.getPassenger_name());
             p.setGender(pd.getGender());
             p.setAge(pd.getAge());
             p.setMealPreference(pd.getMealPreference());
             p.setSeatNumber(pd.getSeatNo());
             passengers.add(p);
         }
+
         passengerRepository.saveAll(passengers);
         booking.setPassengers(passengers);
 
-        bint.updateFlightSeats(flightId, flight.getAvailableSeats() - bookingRequest.getNumberOfSeats());
-        String event = "Ticket booked for passengers=" + bookingRequest.getPassengers()
-        + ", flightId=" + flight.getFlightId()
-        + ", pnr=" + booking.getPnr();
-kafkaTemplate.send("ticket-booked",event);
-        
-        
+        // 6️⃣ Update available seats in Flight service
+        try {
+            bint.updateFlightSeats(flightId, flight.getAvailableSeats() - bookingRequest.getNumberOfSeats());
+        } catch (Exception ex) {
+            // Rollback passenger creation + booking
+            throw new RuntimeException("Flight service failed while updating seats");
+        }
+
+        // 7️⃣ Send Kafka event (non-blocking)
+        try {
+            kafkaTemplate.send("ticket-booked", 
+                    "Ticket booked: PNR=" + booking.getPnr() + ", flightId=" + flightId);
+        } catch (Exception ex) {
+            logger.error("Kafka send failed for PNR {} : {}", booking.getPnr(), ex.getMessage());
+        }
+
+        // 8️⃣ Return final response
         return mapToResponse(booking, flight);
     }
-
 
   
     @CircuitBreaker(name = "flightService", fallbackMethod = "fallbackSearchFlights")
@@ -177,7 +218,7 @@ kafkaTemplate.send("ticket-booked",event);
         if (booking.getPassengers() != null) {
             for (Passenger p : booking.getPassengers()) {
                 PassengerDetails pd = new PassengerDetails();
-                pd.setPassenger_name(p.getPassenger_name());
+                pd.setPassenger_name(p.getPassengerName());
                 pd.setGender(p.getGender());
                 pd.setAge(p.getAge());
                 pd.setMealType(p.getMealPreference());

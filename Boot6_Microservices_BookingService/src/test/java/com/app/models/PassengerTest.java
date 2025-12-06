@@ -10,14 +10,14 @@ class PassengerTest {
     void testGettersAndSetters() {
         Passenger p = new Passenger();
         p.setPassengerId(1L);
-        p.setPassenger_name("John Doe");
+        p.setPassengerName("John Doe");
         p.setGender("Male");
         p.setAge(30);
         p.setSeatNumber("12A");
         p.setMealPreference("Veg");
 
         assertEquals(1L, p.getPassengerId());
-        assertEquals("John Doe", p.getPassenger_name());
+        assertEquals("John Doe", p.getPassengerName());
         assertEquals("Male", p.getGender());
         assertEquals(30, p.getAge());
         assertEquals("12A", p.getSeatNumber());
@@ -28,7 +28,7 @@ class PassengerTest {
     void testEqualsAndHashCode_Positive() {
         Passenger p1 = new Passenger();
         p1.setPassengerId(1L);
-        p1.setPassenger_name("John");
+        p1.setPassengerName("John");
         p1.setGender("Male");
         p1.setAge(30);
         p1.setSeatNumber("12A");
@@ -36,7 +36,7 @@ class PassengerTest {
 
         Passenger p2 = new Passenger();
         p2.setPassengerId(1L);
-        p2.setPassenger_name("John");
+        p2.setPassengerName("John");
         p2.setGender("Male");
         p2.setAge(30);
         p2.setSeatNumber("12A");

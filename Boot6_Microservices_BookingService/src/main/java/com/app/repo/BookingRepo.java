@@ -11,4 +11,5 @@ import com.app.models.Booking;
 @Repository
 public interface BookingRepo  extends CrudRepository<Booking,Long>{
 Optional<Booking>findByPnr(String pnr);
+
 }
