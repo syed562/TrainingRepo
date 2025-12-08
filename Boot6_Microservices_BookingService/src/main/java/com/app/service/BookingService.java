@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.stereotype.Service;
 
 import com.app.dto.BookingRequest;
@@ -26,6 +28,7 @@ import com.app.repo.PassengerRepo;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 @Service
+@EnableMethodSecurity
 public class BookingService {
 
     @Autowired 
@@ -38,10 +41,11 @@ public class BookingService {
     private KafkaTemplate<String, String> kafkaTemplate;
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(BookingService.class);
   
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @CircuitBreaker(name = "flightService", fallbackMethod = "fallbackBookTicket")
     public BookingResponse bookTicket(Long flightId, BookingRequest bookingRequest) {
 
-        // 1️⃣ Get flight details safely (before saving booking)
+     
         FlightResponse flight;
         try {
             ResponseEntity<FlightResponse> flightResponse = bint.getFlightById(flightId);
@@ -53,12 +57,12 @@ public class BookingService {
             throw new RuntimeException("Flight service is down, try again later");
         }
 
-        // 2️⃣ Check seat availability
+      
         if (flight.getAvailableSeats() < bookingRequest.getNumberOfSeats()) {
             throw new IllegalStateException("Not enough seats available");
         }
 
-        // 3️⃣ Validate seats + passengers
+        
         for (PassengerDetails pd : bookingRequest.getPassengers()) {
 
             if (passengerRepository.existsByFlightIdAndSeatNumber(flightId, pd.getSeatNo())) {
@@ -71,7 +75,6 @@ public class BookingService {
             }
         }
 
-        // 4️⃣ Create booking (only after validations)
         Booking booking = new Booking();
         booking.setPnr(PnrGenerator.generatePnr());
         booking.setFlightId(flightId);
@@ -84,7 +87,7 @@ public class BookingService {
 
         booking = bookingRepository.save(booking);
 
-        // 5️⃣ Save passengers
+        
         List<Passenger> passengers = new ArrayList<>();
         for (PassengerDetails pd : bookingRequest.getPassengers()) {
             Passenger p = new Passenger();
@@ -101,15 +104,15 @@ public class BookingService {
         passengerRepository.saveAll(passengers);
         booking.setPassengers(passengers);
 
-        // 6️⃣ Update available seats in Flight service
+      
         try {
             bint.updateFlightSeats(flightId, flight.getAvailableSeats() - bookingRequest.getNumberOfSeats());
         } catch (Exception ex) {
-            // Rollback passenger creation + booking
+           
             throw new RuntimeException("Flight service failed while updating seats");
         }
 
-        // 7️⃣ Send Kafka event (non-blocking)
+       
         try {
             kafkaTemplate.send("ticket-booked", 
                     "Ticket booked: PNR=" + booking.getPnr() + ", flightId=" + flightId);
@@ -117,11 +120,12 @@ public class BookingService {
             logger.error("Kafka send failed for PNR {} : {}", booking.getPnr(), ex.getMessage());
         }
 
-        // 8️⃣ Return final response
+        
         return mapToResponse(booking, flight);
     }
 
   
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @CircuitBreaker(name = "flightService", fallbackMethod = "fallbackSearchFlights")
     public List<FlightResponse> searchFlights(FlightRequestSearch frs) {
         return bint.searchFlights(frs);
@@ -129,6 +133,7 @@ public class BookingService {
 
 
  
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @CircuitBreaker(name = "flightService", fallbackMethod = "fallbackGetTicket")
     public BookingResponse getTicketByPnr(String pnr) {
         Booking booking = bookingRepository.findByPnr(pnr)
@@ -139,6 +144,7 @@ public class BookingService {
         return mapToResponse(booking, flight);
     }
     
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @CircuitBreaker(name = "flightService", fallbackMethod = "fallbackCancelBooking")
     public String cancelBooking(String pnr) {
 

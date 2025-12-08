@@ -31,7 +31,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .userDetailsService(userDetailsService)
-            .httpBasic(Customizer.withDefaults()); // simple for testing
+            .httpBasic(Customizer.withDefaults()); 
 
         return http.build();
     }

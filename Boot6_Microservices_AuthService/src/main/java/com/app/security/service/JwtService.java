@@ -1,7 +1,7 @@
 package com.app.security.service;
 
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
+import java.security.*;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -27,17 +27,20 @@ public class JwtService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String username) {
-      Date now = new Date();
+    public String generateToken(String username, String role) {
+
+        Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
                 .setSubject(username)
+                .claim("role", role)     
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
     public String extractUsername(String token) {
       return Jwts.parserBuilder().setSigningKey(getSigningKey()).build()

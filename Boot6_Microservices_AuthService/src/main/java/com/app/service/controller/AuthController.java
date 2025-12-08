@@ -48,8 +48,12 @@ public class AuthController {
         if (!auth.isAuthenticated()) {
             throw new RuntimeException("Invalid credentials");
         }
+        AppUser user = userRepo.findByUsername(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String token = jwtService.generateToken(request.getUsername());
+      
+        String token = jwtService.generateToken(user.getUsername(), user.getRole());
+
         return ResponseEntity.ok(new AuthResponse(token));
     }
 }
