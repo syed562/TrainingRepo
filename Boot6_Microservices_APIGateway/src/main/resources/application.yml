@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: APIGATEWAY
+    name: apigateway
 
   cloud:
     gateway:
@@ -15,29 +15,36 @@ spring:
       routes:
 
         # -------- AUTH SERVICE (NO JWT REQUIRED) ----------
-        - id: AUTHSERVICE
+        - id: auth-service
           uri: lb://AUTHSERVICE
           predicates:
-            - Path=/auth/**   # <-- FIXED THIS
+            - Path=/auth/**
+          filters:
+            - StripPrefix=0
 
         # -------- FLIGHT SERVICE ----------
-        - id: FLIGHTSERVICE
+        - id: flight-service
           uri: lb://FLIGHTSERVICE
           predicates:
             - Path=/flight/**
+          filters:
+            - StripPrefix=0
 
         # -------- BOOKING SERVICE ----------
-        - id: BOOKINGSERVICE
+        - id: booking-service
           uri: lb://BOOKINGSERVICE
           predicates:
             - Path=/booking/**
+          filters:
+            - StripPrefix=0
 
 eureka:
   client:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      # MUST be service name, NOT localhost
+      defaultZone: http://eureka:8761/eureka/
 
 management:
   endpoints:
@@ -48,4 +55,3 @@ management:
 jwt:
   secret: Z3lK8s9P0q1R4u7X2b5N8m3C6v9T4r7E1u3P9x6L2q8W4s7D1c5V9b2K4m8J1
   expiration: 3600000
-

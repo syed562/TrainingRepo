@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 
 @Component
 @RequiredArgsConstructor
+/*
 public class JwtAuthFilter implements GlobalFilter, Ordered {
 
     private final GatewayJwtUtil jwtUtil;
@@ -61,5 +62,60 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     @Override
     public int getOrder() {
         return -1; 
+    }
+}
+*/
+
+
+
+
+public class JwtAuthFilter implements GlobalFilter, Ordered {
+
+    private final GatewayJwtUtil jwtUtil;
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
+        ServerHttpRequest request = exchange.getRequest();
+        String path = request.getURI().getPath();
+
+        // ✔ Allow login and register without JWT
+        if (path.contains("/auth/login") || path.contains("/auth/register")) {
+            return chain.filter(exchange);
+        }
+
+        // ✔ Extract JWT from Cookie instead of header
+        String token = null;
+        if (request.getCookies().getFirst("jwt") != null) {
+            token = request.getCookies().getFirst("jwt").getValue();
+        }
+
+        if (token == null || token.isBlank()) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        // ✔ Validate token
+        if (!jwtUtil.validateToken(token)) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        // ✔ Extract username & role
+        String username = jwtUtil.extractUsername(token);
+        String role = "ROLE_" + jwtUtil.extractRole(token);
+
+        // ✔ Add headers for downstream microservices
+        ServerHttpRequest modifiedRequest = request.mutate()
+                .header("X-User-Name", username)
+                .header("X-User-Role", role)
+                .build();
+
+        return chain.filter(exchange.mutate().request(modifiedRequest).build());
+    }
+
+    @Override
+    public int getOrder() {
+        return -1;
     }
 }

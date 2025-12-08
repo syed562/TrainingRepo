@@ -17,13 +17,13 @@ import jakarta.validation.Valid;
 
 @FeignClient(name="FLIGHTSERVICE")
 public interface BookingInterface {
-    @GetMapping("flight/get/{id}")
+    @GetMapping("/flight/get/{id}")
    public ResponseEntity<FlightResponse>getFlightById(@PathVariable Long id);
    
-    @PutMapping("flight/updateseats/{id}/{seats}")
+    @PutMapping("/flight/updateseats/{id}/{seats}")
     public void updateFlightSeats(@PathVariable Long id,@PathVariable int seats);
     
-    @PostMapping("flight/search")
+    @PostMapping("/flight/search")
     public List<FlightResponse> searchFlights(@Valid @RequestBody FlightRequestSearch searchRequest);
 
 }
