@@ -114,10 +114,9 @@ public class AuthController {
         AppUser user = userRepo.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // ✔ Generate JWT
         String token = jwtService.generateToken(user.getUsername(), user.getRole());
 
-        // ✔ Create secure HttpOnly cookie
+        //  Create secure HttpOnly cookie
         ResponseCookie cookie = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
                 .secure(false)         

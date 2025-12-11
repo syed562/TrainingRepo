@@ -79,12 +79,12 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
-        // ✔ Allow login and register without JWT
+        // Allow login and register without JWT
         if (path.contains("/auth/login") || path.contains("/auth/register")) {
             return chain.filter(exchange);
         }
 
-        // ✔ Extract JWT from Cookie instead of header
+        //Extract JWT from Cookie instead of header
         String token = null;
         if (request.getCookies().getFirst("jwt") != null) {
             token = request.getCookies().getFirst("jwt").getValue();
@@ -95,17 +95,17 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             return exchange.getResponse().setComplete();
         }
 
-        // ✔ Validate token
+        // Validate token
         if (!jwtUtil.validateToken(token)) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
 
-        // ✔ Extract username & role
+        // Extract username & role
         String username = jwtUtil.extractUsername(token);
         String role = "ROLE_" + jwtUtil.extractRole(token);
 
-        // ✔ Add headers for downstream microservices
+        // Add headers for downstream microservices
         ServerHttpRequest modifiedRequest = request.mutate()
                 .header("X-User-Name", username)
                 .header("X-User-Role", role)

@@ -41,7 +41,7 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // For manual authentication in controller
+   
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
             throws Exception {
