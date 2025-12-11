@@ -1,0 +1,24 @@
+[
+  {
+    "flightNumber": "AI103",
+    "airline": "Air India",
+    "fromPlace": "DEL",
+    "toPlace": "HYD",
+    "departureTime": "2025-12-12T10:00:00",
+    "arrivalTime": "2025-12-12T12:00:00",
+    "price": 7500,
+       "availableSeats": 150,
+       "totalSeats":200
+  },
+  {
+    "flightNumber": "6E202",
+    "airline": "Indigo",
+    "fromPlace": "HYD",
+  
+    "departureTime": "2025-12-12T08:30:00",
+    "arrivalTime": "2025-12-12T09:40:00",
+    "price": 4200,
+       "availableSeats": 150,
+         "totalSeats":200
+  }
+]

@@ -71,6 +71,7 @@ public class SecurityConfig {
 	    http
 	        .csrf(csrf -> csrf.disable())
 	        .authorizeHttpRequests(auth -> auth
+	        		.requestMatchers("/uploadFlights", "/files/**").permitAll()
 	            .requestMatchers("/flight/add", "/flight/delete/**")
 	            .hasRole("ADMIN")
 	            .requestMatchers("/flight/**").authenticated()
